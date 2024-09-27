@@ -240,12 +240,12 @@ MAIN PROC
     MOV WORD PTR [Y2], 350  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
 
-    ; ; Dibujar cuadrado  "flecha arriba"
-    ; MOV WORD PTR [X1], 350  ; Columna inicial (X1) para el tercer botón
-    ; MOV WORD PTR [Y1], 50   ; Fila inicial (Y1)
-    ; MOV WORD PTR [X2], 450  ; Columna final (X2)
-    ; MOV WORD PTR [Y2], 100  ; Fila final (Y2)
-    ; CALL DRAW_RECTANGLE
+    ; Dibujar cuadrado  "flecha arriba"
+    MOV WORD PTR [X1], 532  ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 390  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 562  ; Columna final (X2)
+    MOV WORD PTR [Y2], 420  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE
 
     ; ; Dibujar cuadrado  "flecha abajo"
     ; MOV WORD PTR [X1], 350  ; Columna inicial (X1) para el tercer botón
