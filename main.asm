@@ -13,6 +13,7 @@
     textoCargar DB 'Cargar', 0
     textoLimpiar DB 'Limpiar', 0
 
+
 .CODE
 
 ; ----------------------------------------------------------------
@@ -62,7 +63,7 @@ CLEAR_SCREEN ENDP
 ; ----------------------------------------------------------------
 DRAW_RECTANGLE PROC
     ; Dibujar la línea superior (de X1 a X2 en Y1)
-    MOV AL, 04H         ; Color rojo
+    MOV AL, 00H        ; Color rojo
     MOV DX, [Y1]        ; Y1 (Fila inicial)
     MOV CX, [X1]        ; X1 (Columna inicial)
 TOP_LINE:
@@ -72,7 +73,7 @@ TOP_LINE:
     JLE TOP_LINE        ; Si no, continuar
 
     ; Dibujar la línea inferior (de X1 a X2 en Y2)
-    MOV AL, 04H         ; Color rojo
+    MOV AL, 00H         ; Color rojo
     MOV DX, [Y2]        ; Y2 (Fila final)
     MOV CX, [X1]        ; X1
 BOTTOM_LINE:
@@ -82,7 +83,7 @@ BOTTOM_LINE:
     JLE BOTTOM_LINE
 
     ; Dibujar la línea izquierda (de Y1 a Y2 en X1)
-    MOV AL, 04H         ; Color rojo
+    MOV AL, 00H         ; Color rojo
     MOV CX, [X1]        ; X1
     MOV DX, [Y1]        ; Y1
 LEFT_LINE:
@@ -92,7 +93,7 @@ LEFT_LINE:
     JLE LEFT_LINE
 
     ; Dibujar la línea derecha (de Y1 a Y2 en X2)
-    MOV AL, 04H         ; Color rojo
+    MOV AL, 00H         ; Color rojo
     MOV CX, [X2]        ; X2
     MOV DX, [Y1]        ; Y1
 RIGHT_LINE:
@@ -103,6 +104,28 @@ RIGHT_LINE:
 
     RET
 DRAW_RECTANGLE ENDP
+
+; ----------------------------------------------------------------
+; FUNCION PARA RELLENAR UN RECTANGULO
+; ----------------------------------------------------------------
+FILL_RECTANGLE PROC
+    MOV DX, [Y1]        ; Fila inicial (Y1)
+FILL_ROWS:
+    MOV CX, [X1]        ; Columna inicial (X1)
+FILL_PIXELS:
+    
+    CALL PINTA_PIXEL    ; Pintar cada píxel
+    INC CX              ; Avanzar en la columna
+    CMP CX, [X2]        ; ¿Llegamos al borde derecho (X2)?
+    JLE FILL_PIXELS     ; Si no, continuar
+
+    INC DX              ; Pasar a la siguiente fila (avanzar en Y)
+    CMP DX, [Y2]        ; ¿Llegamos al borde inferior (Y2)?
+    JLE FILL_ROWS       ; Si no, continuar rellenando
+    RET
+FILL_RECTANGLE ENDP
+
+
 
 ; ----------------------------------------------------------------
 ; PROGRAMA PRINCIPAL
@@ -176,6 +199,8 @@ MAIN PROC
     MOV WORD PTR [X2], 530  ; Columna final (X2)
     MOV WORD PTR [Y2], 110   ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 01H
+    CALL FILL_RECTANGLE
 
     ; Dibujar color  "verde"
     MOV WORD PTR [X1], 500  ; Columna inicial (X1) para el tercer botón
@@ -183,6 +208,8 @@ MAIN PROC
     MOV WORD PTR [X2], 530  ; Columna final (X2)
     MOV WORD PTR [Y2], 170  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 02H
+    CALL FILL_RECTANGLE
 
     ; Dibujar color  "rojo"
     MOV WORD PTR [X1], 500  ; Columna inicial (X1) para el tercer botón
@@ -190,6 +217,8 @@ MAIN PROC
     MOV WORD PTR [X2], 530  ; Columna final (X2)
     MOV WORD PTR [Y2], 230  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 04H
+    CALL FILL_RECTANGLE
 
     ; Dibujar color  "amarillo"
     MOV WORD PTR [X1], 500  ; Columna inicial (X1) para el tercer botón
@@ -197,6 +226,8 @@ MAIN PROC
     MOV WORD PTR [X2], 530  ; Columna final (X2)
     MOV WORD PTR [Y2], 290  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 0EH
+    CALL FILL_RECTANGLE
 
     ; Dibujar color  "blanco"
     MOV WORD PTR [X1], 500  ; Columna inicial (X1) para el tercer botón
@@ -204,6 +235,8 @@ MAIN PROC
     MOV WORD PTR [X2], 530  ; Columna final (X2)
     MOV WORD PTR [Y2], 350  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 0FH
+    CALL FILL_RECTANGLE
 
     ; Dibujar color  "morado"
     MOV WORD PTR [X1], 565  ; Columna inicial (X1) para el tercer botón
@@ -211,6 +244,8 @@ MAIN PROC
     MOV WORD PTR [X2], 595  ; Columna final (X2)
     MOV WORD PTR [Y2], 110  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 05H
+    CALL FILL_RECTANGLE
 
     ; Dibujar color  "marron"
     MOV WORD PTR [X1], 565  ; Columna inicial (X1) para el tercer botón
@@ -218,6 +253,8 @@ MAIN PROC
     MOV WORD PTR [X2], 595  ; Columna final (X2)
     MOV WORD PTR [Y2], 170  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 06H
+    CALL FILL_RECTANGLE
 
     ; Dibujar color  "azul claro"
     MOV WORD PTR [X1], 565  ; Columna inicial (X1) para el tercer botón
@@ -225,6 +262,9 @@ MAIN PROC
     MOV WORD PTR [X2], 595  ; Columna final (X2)
     MOV WORD PTR [Y2], 230  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 09H
+    CALL FILL_RECTANGLE
+    
 
     ; Dibujar color  "verde claro"
     MOV WORD PTR [X1], 565  ; Columna inicial (X1) para el tercer botón
@@ -232,6 +272,8 @@ MAIN PROC
     MOV WORD PTR [X2], 595  ; Columna final (X2)
     MOV WORD PTR [Y2], 290  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 0AH
+    CALL FILL_RECTANGLE
 
     ; Dibujar color  "negro"
     MOV WORD PTR [X1], 565  ; Columna inicial (X1) para el tercer botón
@@ -239,6 +281,8 @@ MAIN PROC
     MOV WORD PTR [X2], 595  ; Columna final (X2)
     MOV WORD PTR [Y2], 350  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 00H
+    CALL FILL_RECTANGLE
 
     ; Dibujar cuadrado  "flecha arriba"
     MOV WORD PTR [X1], 532  ; Columna inicial (X1) para el tercer botón
@@ -247,26 +291,26 @@ MAIN PROC
     MOV WORD PTR [Y2], 420  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
 
-    ; ; Dibujar cuadrado  "flecha abajo"
-    ; MOV WORD PTR [X1], 350  ; Columna inicial (X1) para el tercer botón
-    ; MOV WORD PTR [Y1], 50   ; Fila inicial (Y1)
-    ; MOV WORD PTR [X2], 450  ; Columna final (X2)
-    ; MOV WORD PTR [Y2], 100  ; Fila final (Y2)
-    ; CALL DRAW_RECTANGLE
+    ; Dibujar cuadrado  "flecha abajo"
+    MOV WORD PTR [X1], 532  ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 425   ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 562  ; Columna final (X2)
+    MOV WORD PTR [Y2], 455  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE
 
-    ; ; Dibujar cuadrado  "flecha izquierda"
-    ; MOV WORD PTR [X1], 350  ; Columna inicial (X1) para el tercer botón
-    ; MOV WORD PTR [Y1], 50   ; Fila inicial (Y1)
-    ; MOV WORD PTR [X2], 450  ; Columna final (X2)
-    ; MOV WORD PTR [Y2], 100  ; Fila final (Y2)
-    ; CALL DRAW_RECTANGLE
+    ; Dibujar cuadrado  "flecha izquierda"
+    MOV WORD PTR [X1], 497  ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 425   ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 527 ; Columna final (X2)
+    MOV WORD PTR [Y2], 455  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE
 
-    ; ; Dibujar cuadrado  "flecha derecha"
-    ; MOV WORD PTR [X1], 350  ; Columna inicial (X1) para el tercer botón
-    ; MOV WORD PTR [Y1], 50   ; Fila inicial (Y1)
-    ; MOV WORD PTR [X2], 450  ; Columna final (X2)
-    ; MOV WORD PTR [Y2], 100  ; Fila final (Y2)
-    ; CALL DRAW_RECTANGLE
+    ; Dibujar cuadrado  "flecha derecha"
+    MOV WORD PTR [X1], 567  ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 425   ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 597  ; Columna final (X2)
+    MOV WORD PTR [Y2], 455  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE
 
     ; Esperar a que se presione una tecla
     MOV AH, 00H
