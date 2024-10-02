@@ -9,9 +9,9 @@
     Y2 DW 0
 
     ; Textos para los botones
-    textoGuardar DB 'Guardar', 0
-    textoCargar DB 'Cargar', 0
-    textoLimpiar DB 'Limpiar', 0
+    textoGuardar DB 'Guardar$'
+    textoCargar DB 'Cargar$'
+    textoLimpiar DB 'Limpiar$'
 
 
 .CODE
@@ -127,6 +127,157 @@ FILL_PIXELS:
     RET
 FILL_RECTANGLE ENDP
 
+DRAW_ARROW_UP PROC
+    MOV BH, 00H    ; Página 0
+    MOV AL, 0FH    ; Color VERDE
+    ; Dibujar la línea HORIZONTAL DEL TRIANGULO 
+    MOV CX, 537
+    MOV DX, 410
+DRAW_HORIZONTAL_LINE_UP:
+    MOV AH, 0CH
+    INT 10H
+    INC CX
+    CMP CX, 557
+    JNE DRAW_HORIZONTAL_LINE_UP
+
+    ; Dibujar SLASH DEL TRIANGULO (\)
+    MOV CX, 557
+    MOV DX, 410
+DRAW_SLASH_LEFT_UP:
+    MOV AH, 0CH
+    INT 10H
+    DEC CX
+    DEC DX
+    CMP CX, 546
+    JNE DRAW_SLASH_LEFT_UP
+
+    ; Dibujar SLASH DEL TRIANGULO (/)
+    MOV CX, 537
+    MOV DX, 410
+DRAW_SLASH_RIGHT_UP:
+    MOV AH, 0CH
+    INT 10H
+    INC CX
+    DEC DX
+    CMP CX, 547
+    JNE DRAW_SLASH_RIGHT_UP
+
+    RET
+DRAW_ARROW_UP ENDP
+
+DRAW_ARROW_DOWN PROC
+    MOV BH, 00H    ; Página 0
+    MOV AL, 0FH    ; Color VERDE
+    ; Dibujar la línea HORIZONTAL DEL TRIANGULO 
+    MOV CX, 537
+    MOV DX, 435
+DRAW_HORIZONTAL_LINE_DOWN:
+    MOV AH, 0CH
+    INT 10H
+    INC CX
+    CMP CX, 557
+    JNE DRAW_HORIZONTAL_LINE_DOWN
+
+    ; Dibujar SLASH DEL TRIANGULO (\)
+    MOV CX, 547
+    MOV DX, 445
+DRAW_SLASH_LEFT_DOWN:
+    MOV AH, 0CH
+    INT 10H
+    DEC CX
+    DEC DX
+    CMP CX, 537
+    JNE DRAW_SLASH_LEFT_DOWN
+
+    ; Dibujar SLASH DEL TRIANGULO (/)
+    MOV CX, 547
+    MOV DX, 445
+DRAW_SLASH_RIGHT_DOWN:
+    MOV AH, 0CH
+    INT 10H
+    INC CX
+    DEC DX
+    CMP CX, 557
+    JNE DRAW_SLASH_RIGHT_DOWN
+
+    RET
+DRAW_ARROW_DOWN ENDP
+
+DRAW_ARROW_RIGHT PROC
+    MOV BH, 00H    ; Página 0
+    MOV AL, 0FH    ; Color VERDE
+    ; Dibujar la línea VERTICAL DEL TRIANGULO 
+    MOV CX, 577
+    MOV DX, 450
+DRAW_VERTICAL_LINE_RIGHT:
+    MOV AH, 0CH
+    INT 10H
+    DEC DX
+    CMP DX, 430
+    JNE DRAW_VERTICAL_LINE_RIGHT
+
+    ; Dibujar SLASH DEL TRIANGULO (\)
+    MOV CX, 587
+    MOV DX, 440
+DRAW_SLASH_LEFT_RIGHT:
+    MOV AH, 0CH
+    INT 10H
+    DEC CX
+    DEC DX
+    CMP CX, 577
+    JNE DRAW_SLASH_LEFT_RIGHT
+
+    ; Dibujar SLASH DEL TRIANGULO (/)
+    MOV CX, 577
+    MOV DX, 450
+DRAW_SLASH_RIGHT_RIGHT:
+    MOV AH, 0CH
+    INT 10H
+    INC CX
+    DEC DX
+    CMP CX, 587
+    JNE DRAW_SLASH_RIGHT_RIGHT
+
+    RET
+DRAW_ARROW_RIGHT ENDP
+
+DRAW_ARROW_LEFT PROC
+    MOV BH, 00H    ; Página 0
+    MOV AL, 0FH    ; Color VERDE
+    ; Dibujar la línea VERTICAL DEL TRIANGULO 
+    MOV CX, 517
+    MOV DX, 450
+DRAW_VERTICAL_LINE_LEFT:
+    MOV AH, 0CH
+    INT 10H
+    DEC DX
+    CMP DX, 430
+    JNE DRAW_VERTICAL_LINE_LEFT
+
+    ; Dibujar SLASH DEL TRIANGULO (\)
+    MOV CX, 517
+    MOV DX, 450
+DRAW_SLASH_LEFT_LEFT:
+    MOV AH, 0CH
+    INT 10H
+    DEC CX
+    DEC DX
+    CMP CX, 507
+    JNE DRAW_SLASH_LEFT_LEFT
+
+    ; Dibujar SLASH DEL TRIANGULO (/)
+    MOV CX, 507
+    MOV DX, 440
+DRAW_SLASH_RIGHT_LEFT:
+    MOV AH, 0CH
+    INT 10H
+    INC CX
+    DEC DX
+    CMP CX, 517
+    JNE DRAW_SLASH_RIGHT_LEFT
+
+    RET
+DRAW_ARROW_LEFT ENDP
 
 
 ; ----------------------------------------------------------------
@@ -310,7 +461,9 @@ MAIN PROC
     CALL DRAW_RECTANGLE
     MOV AL, 0CH
     CALL FILL_RECTANGLE
-
+    ; CALL DRAW_TRIANGLE_UP
+   
+    
     ; Dibujar cuadrado  "flecha abajo"
     MOV WORD PTR [X1], 532  ; Columna inicial (X1) para el tercer botón
     MOV WORD PTR [Y1], 425   ; Fila inicial (Y1)
@@ -338,12 +491,17 @@ MAIN PROC
     MOV AL, 0CH
     CALL FILL_RECTANGLE
 
-    ; Esperar a que se presione una tecla
-    MOV AH, 00H
-    INT 16H
+    CALL DRAW_ARROW_UP
+    CALL DRAW_ARROW_DOWN
+    CALL DRAW_ARROW_RIGHT
+    CALL DRAW_ARROW_LEFT
 
     
 
+
+    ; Esperar a que se presione una tecla
+    MOV AH, 00H
+    INT 16H
     RET
 MAIN ENDP
 
