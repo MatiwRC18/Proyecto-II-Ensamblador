@@ -15,6 +15,7 @@
     txtImagen DB 'Insertar imagen$'
     txtCampo DB 'Campo de texto$'
     txtDibujo DB 'Dibujo sin nombre$'
+    txtColores DB 'Colores$'
 
 
 .CODE
@@ -418,7 +419,7 @@ TEXT_DIBUJO PROC
     ; Escribe en pantalla texto del botón de guardar
     CLD
     MOV SI, OFFSET txtDibujo
-    TEXT_POSITION 2,17
+    TEXT_POSITION 2,16
 PRINT_TXT_DIBUJO:
     LODSB              ; Cargar el siguiente byte del mensaje en AL
     CMP AL, '$'
@@ -433,12 +434,26 @@ END_PRINT_TXT_DIBUJO:
     RET
 TEXT_DIBUJO ENDP
 
-; ----------------------------------------------------------------
-; PROGRAMA PRINCIPAL
-; ----------------------------------------------------------------
-MAIN PROC
-    MOV AX,@DATA
-	MOV DS,AX
+TEXT_COLORES PROC
+    ; Escribe en pantalla texto del botón de guardar
+    CLD
+    MOV SI, OFFSET txtColores
+    TEXT_POSITION 3,65
+PRINT_TXT_COLORES:
+    LODSB              ; Cargar el siguiente byte del mensaje en AL
+    CMP AL, '$'
+    JE END_PRINT_TXT_COLORES
+    MOV AH, 0EH
+    MOV BH, 00H
+    MOV BL, 0FH        ; Atributo del carácter (0Fh es blanco sobre negro)
+    INT 10H
+    JMP PRINT_TXT_COLORES
+
+END_PRINT_TXT_COLORES:
+    RET
+TEXT_COLORES ENDP
+
+SET_GRAFICS PROC 
 
     ; Inicializar la pantalla en modo gráfico
     CALL INIT_SCREEN
@@ -476,7 +491,7 @@ MAIN PROC
     ; Dibujar boton "guardar bosquejo"
     MOV WORD PTR [X1], 25   ; Columna inicial (X1) para el tercer botón
     MOV WORD PTR [Y1], 390  ; Fila inicial (Y1)
-    MOV WORD PTR [X2], 160  ; Columna final (X2)
+    MOV WORD PTR [X2], 164  ; Columna final (X2)
     MOV WORD PTR [Y2], 425  ; Fila final (Y2)
     CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 00H
@@ -485,7 +500,7 @@ MAIN PROC
     ; Dibujar boton "cargar bosquejo"
     MOV WORD PTR [X1], 25   ; Columna inicial (X1) para el tercer botón
     MOV WORD PTR [Y1], 435  ; Fila inicial (Y1)
-    MOV WORD PTR [X2], 160  ; Columna final (X2)
+    MOV WORD PTR [X2], 157  ; Columna final (X2)
     MOV WORD PTR [Y2], 470  ; Fila final (Y2)
     CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 00H
@@ -515,7 +530,7 @@ MAIN PROC
     MOV WORD PTR [X2], 615  ; Columna final (X2)
     MOV WORD PTR [Y2], 375  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
-    MOV AL, 07H
+    MOV AL, 00H
     CALL FILL_RECTANGLE
 
     ; Dibujar cuadro color  "azul"
@@ -523,7 +538,7 @@ MAIN PROC
     MOV WORD PTR [Y1], 80   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 530  ; Columna final (X2)
     MOV WORD PTR [Y2], 110   ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 01H
     CALL FILL_RECTANGLE
 
@@ -532,7 +547,7 @@ MAIN PROC
     MOV WORD PTR [Y1], 140  ; Fila inicial (Y1)
     MOV WORD PTR [X2], 530  ; Columna final (X2)
     MOV WORD PTR [Y2], 170  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 02H
     CALL FILL_RECTANGLE
 
@@ -541,7 +556,7 @@ MAIN PROC
     MOV WORD PTR [Y1], 200  ; Fila inicial (Y1)
     MOV WORD PTR [X2], 530  ; Columna final (X2)
     MOV WORD PTR [Y2], 230  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 04H
     CALL FILL_RECTANGLE
 
@@ -550,7 +565,7 @@ MAIN PROC
     MOV WORD PTR [Y1], 260   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 530  ; Columna final (X2)
     MOV WORD PTR [Y2], 290  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 0EH
     CALL FILL_RECTANGLE
 
@@ -559,7 +574,7 @@ MAIN PROC
     MOV WORD PTR [Y1], 320   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 530  ; Columna final (X2)
     MOV WORD PTR [Y2], 350  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 0FH
     CALL FILL_RECTANGLE
 
@@ -568,7 +583,7 @@ MAIN PROC
     MOV WORD PTR [Y1], 80   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 595  ; Columna final (X2)
     MOV WORD PTR [Y2], 110  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 05H
     CALL FILL_RECTANGLE
 
@@ -577,7 +592,7 @@ MAIN PROC
     MOV WORD PTR [Y1], 140   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 595  ; Columna final (X2)
     MOV WORD PTR [Y2], 170  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 06H
     CALL FILL_RECTANGLE
 
@@ -586,7 +601,7 @@ MAIN PROC
     MOV WORD PTR [Y1], 200   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 595  ; Columna final (X2)
     MOV WORD PTR [Y2], 230  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 09H
     CALL FILL_RECTANGLE
     
@@ -596,7 +611,7 @@ MAIN PROC
     MOV WORD PTR [Y1], 260   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 595  ; Columna final (X2)
     MOV WORD PTR [Y2], 290  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 0AH
     CALL FILL_RECTANGLE
 
@@ -605,7 +620,7 @@ MAIN PROC
     MOV WORD PTR [Y1], 320   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 595  ; Columna final (X2)
     MOV WORD PTR [Y2], 350  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
@@ -658,11 +673,26 @@ MAIN PROC
     CALL TEXT_IMAGEN
     CALL TEXT_CAMPO
     CALL TEXT_DIBUJO
-    
+    CALL TEXT_COLORES
+
     ; Esperar a que se presione una tecla
     MOV AH, 00H
     INT 16H
     RET
+
+SET_GRAFICS ENDP
+
+
+; ----------------------------------------------------------------
+; PROGRAMA PRINCIPAL
+; ----------------------------------------------------------------
+MAIN PROC
+    MOV AX,@DATA
+	MOV DS,AX
+
+    CALL SET_GRAFICS
+    
+    
 MAIN ENDP
 
 END MAIN
