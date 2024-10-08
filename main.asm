@@ -2,11 +2,13 @@
 .STACK 100H
 
 .DATA
-    ; Coordenadas para los rectángulos (botones)
+   ; Coordenadas para los rectángulos (botones)
     X1 DW 0
     Y1 DW 0
     X2 DW 0
     Y2 DW 0
+
+
 
    ; Cadenas de texto (terminadas en '$')
     txtGuardar DB 'Guardar bosquejo$'
@@ -16,6 +18,35 @@
     txtCampo DB 'Campo de texto$'
     txtDibujo DB 'Dibujo sin nombre$'
     txtColores DB 'Colores$'
+
+    ; Coordenadas para los rectángulos (botones)
+    RECT_1 DW 500, 80, 530, 110       ; X1, Y1, X2, Y2 del rectángulo 1 (color azul)
+    RECT_2 DW 500, 140, 530, 170      ; X1, Y1, X2, Y2 del rectángulo 2 (color verde)
+    RECT_3 DW 500, 200, 530, 230      ; X1, Y1, X2, Y2 del rectángulo 3 (color rojo)
+    RECT_4 DW 500, 260, 530, 290      ; X1, Y1, X2, Y2 del rectángulo 4 (color amarillo)
+    RECT_5 DW 500, 320, 530, 350      ; X1, Y1, X2, Y2 del rectángulo 5 (color blanco)
+    RECT_6 DW 565, 80, 595, 110       ; X1, Y1, X2, Y2 del rectángulo 6 (color morado)
+    RECT_7 DW 565, 140, 595, 170      ; X1, Y1, X2, Y2 del rectángulo 7 (color marrón)
+    RECT_8 DW 565, 200, 595, 230      ; X1, Y1, X2, Y2 del rectángulo 8 (color azul claro)
+    RECT_9 DW 565, 260, 595, 290      ; X1, Y1, X2, Y2 del rectángulo 9 (color verde claro)
+    RECT_10 DW 565, 320, 595, 350     ; X1, Y1, X2, Y2 del rectángulo 10 (color negro)
+    RECT_11 DW 360, 25, 460, 50       ; Coordenadas del área de limpieza
+
+    ; Colores correspondientes a cada rectángulo
+    RECTANGLE_COLORS DB 01H, 02H, 04H, 0EH, 0FH, 05H, 06H, 09H, 0AH, 00H
+    SELECTED_COLOR DB 0 
+
+    X_POS DW 0        ; Almacena la posición X del mouse
+    Y_POS DW 0        ; Almacena la posición Y del mouse
+    BUTTONS DW 0      ; Almacena el estado de los botones del mouse
+
+    DRAW_X DW ?
+    DRAW_Y DW ?
+
+    DRAW_X1 DW 25     ; Limite izquierdo del área de dibujo
+    DRAW_Y1 DW 65     ; Limite superior del área de dibujo
+    DRAW_X2 DW 460    ; Limite derecho del área de dibujo
+    DRAW_Y2 DW 375    ; Limite inferior del área de dibujo
 
 
 .CODE
@@ -675,13 +706,159 @@ SET_GRAFICS PROC
     CALL TEXT_DIBUJO
     CALL TEXT_COLORES
 
-    ; Esperar a que se presione una tecla
-    MOV AH, 00H
-    INT 16H
     RET
 
 SET_GRAFICS ENDP
 
+MOUSE_INIT PROC
+    MOV AX, 0      ; Función 0 de la interrupción 33h: inicializar el mouse
+    INT 33h        ; Interrupción para interactuar con el mouse
+    RET
+MOUSE_INIT ENDP
+
+MOUSE_SHOW PROC
+    MOV AX, 01h    ; Función 01h de INT 33h: Mostrar el cursor del mouse
+    INT 33h        ; Interrupción para interactuar con el mouse
+    RET
+MOUSE_SHOW ENDP
+
+MOUSE_GET_POSITION PROC
+    PUSH AX        ; Preservar AX
+    MOV AX, 03h    ; Función 3 de la interrupción 33h: obtener estado del mouse
+    INT 33h        ; Interrupción para interactuar con el mouse
+
+    MOV [X_POS], CX   ; Guardar la posición X en X_POS
+    MOV [Y_POS], DX   ; Guardar la posición Y en Y_POS
+    MOV [BUTTONS], BX ; Guardar el estado de los botones en BUTTONS
+
+    POP AX         ; Restaurar AX
+    RET
+MOUSE_GET_POSITION ENDP
+
+IS_CLICK_INSIDE_RECTANGLE PROC
+    PUSH AX        ; Preservar AX
+
+    ; Comparar X del mouse con X1 y X2 del rectángulo
+    MOV AX, [BX]        ; AX = X1 del rectángulo
+    CMP CX, AX          ; CX < X1?
+    JL @NOT_INSIDE      ; Si CX es menor que X1, salir (no está dentro)
+
+    MOV AX, [BX+4]      ; AX = X2 del rectángulo
+    CMP CX, AX          ; CX > X2?
+    JG @NOT_INSIDE      ; Si CX es mayor que X2, salir (no está dentro)
+
+    ; Comparar Y del mouse con Y1 y Y2 del rectángulo
+    MOV AX, [BX+2]      ; AX = Y1 del rectángulo
+    CMP DX, AX          ; DX < Y1?
+    JL @NOT_INSIDE      ; Si DX es menor que Y1, salir (no está dentro)
+
+    MOV AX, [BX+6]      ; AX = Y2 del rectángulo
+    CMP DX, AX          ; DX > Y2?
+    JG @NOT_INSIDE      ; Si DX es mayor que Y2, salir (no está dentro)
+
+    ; Si llegamos aquí, el clic está dentro del rectángulo
+    CMP AX, AX          ; Comparación redundante para activar ZF (establecer ZF)
+    JMP @DONE
+
+@NOT_INSIDE:
+    OR AX, AX           ; Comparación para limpiar ZF (desactivar ZF)
+
+@DONE:
+    POP AX              ; Restaurar AX
+    RET
+IS_CLICK_INSIDE_RECTANGLE ENDP
+
+
+DRAWING_LOOP PROC
+    ; Bucle para mover el cursor y dibujar con las teclas
+DRAW_LOOP:
+    ; Verificar si se presiona una tecla
+    MOV AH, 01h
+    INT 16h
+    JZ CHECK_MOUSE  ; Si no se presiona tecla, revisar el mouse
+
+    ; Leer la tecla presionada
+    MOV AH, 00h
+    INT 16h
+
+    CMP AL, 'a'   ; Tecla A (izquierda)
+    JE DRAW_LEFT
+    CMP AL, 'd'   ; Tecla D (derecha)
+    JE DRAW_RIGHT
+    CMP AL, 'w'   ; Tecla W (arriba)
+    JE DRAW_UP
+    CMP AL, 's'   ; Tecla S (abajo)
+    JE DRAW_DOWN
+    JMP DRAW_LOOP
+
+DRAW_LEFT:
+    CMP [DRAW_X], 25   ; Límite izquierdo del área de dibujo
+    JLE DRAW_LOOP
+    DEC WORD PTR [DRAW_X]  ; Decrementar DRAW_X
+    JMP DRAW_PIXEL
+
+DRAW_RIGHT:
+    CMP [DRAW_X], 460  ; Límite derecho del área de dibujo
+    JGE DRAW_LOOP
+    INC WORD PTR [DRAW_X]  ; Incrementar DRAW_X
+    JMP DRAW_PIXEL
+
+DRAW_UP:
+    CMP [DRAW_Y], 65   ; Límite superior del área de dibujo
+    JLE DRAW_LOOP
+    DEC WORD PTR [DRAW_Y]  ; Decrementar DRAW_Y
+    JMP DRAW_PIXEL
+
+DRAW_DOWN:
+    CMP [DRAW_Y], 375  ; Límite inferior del área de dibujo
+    JGE DRAW_LOOP
+    INC WORD PTR [DRAW_Y]  ; Incrementar DRAW_Y
+    JMP DRAW_PIXEL
+
+DRAW_PIXEL:
+    ; Dibujar el píxel con el color seleccionado en SELECTED_COLOR
+    MOV AL, [SELECTED_COLOR] 
+    MOV CX, [DRAW_X]
+    MOV DX, [DRAW_Y]
+    CALL PRINT_PIXEL
+    JMP DRAW_LOOP
+
+CHECK_MOUSE:
+    ; Verificar si se presionó el botón izquierdo del mouse
+    CALL MOUSE_GET_POSITION
+    CMP [BUTTONS], 1
+    JNE DRAW_LOOP  ; Si no se presionó el botón izquierdo, continuar dibujando
+
+    ; Verificar si el clic está dentro del área de dibujo
+    CMP [X_POS], 25
+    JL EXIT_DRAWING    ; Si está fuera del área de dibujo (izquierda), verificar rectángulos
+    CMP [X_POS], 460
+    JG EXIT_DRAWING    ; Si está fuera del área de dibujo (derecha), verificar rectángulos
+    CMP [Y_POS], 65
+    JL EXIT_DRAWING    ; Si está fuera del área de dibujo (arriba), verificar rectángulos
+    CMP [Y_POS], 375
+    JG EXIT_DRAWING    ; Si está fuera del área de dibujo (abajo), verificar rectángulos
+
+    MOV AX, [X_POS]   ; Cargar el valor de X_POS en AX
+    MOV [DRAW_X], AX  ; Mover el valor de AX a DRAW_X
+
+    MOV AX, [Y_POS]   ; Cargar el valor de Y_POS en AX
+    MOV [DRAW_Y], AX  ; Mover el valor de AX a DRAW_Y
+    JMP DRAW_LOOP  ; Volver al ciclo de dibujo
+
+EXIT_DRAWING:
+    RET
+DRAWING_LOOP ENDP
+
+CLEAR_DRAWING_AREA PROC
+    MOV WORD PTR [X1], 25   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 65   ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 460  ; Columna final (X2)
+    MOV WORD PTR [Y2], 375  ; Fila final (Y2)
+    MOV AL, 0FH
+    CALL FILL_RECTANGLE
+    RET
+CLEAR_DRAWING_AREA ENDP
 
 ; ----------------------------------------------------------------
 ; PROGRAMA PRINCIPAL
@@ -691,8 +868,51 @@ MAIN PROC
 	MOV DS,AX
 
     CALL SET_GRAFICS
-    
-    
+    ; Inicializar el mouse
+    CALL MOUSE_INIT
+
+    ; Mostrar el cursor del mouse
+    CALL MOUSE_SHOW
+
+    ; Bucle infinito para obtener la posición del mouse y el estado de los botones
+MAIN_LOOP:
+    CALL MOUSE_GET_POSITION
+
+    ; Verificar si se presionó el botón izquierdo del mouse
+    CMP [BUTTONS], 1
+    JNE MAIN_LOOP  ; Si no se presionó el botón izquierdo, repetir bucle
+
+    ; Verificar si el clic está dentro de algún rectángulo
+    MOV SI, OFFSET RECT_1  ; Iniciar con el primer rectángulo
+    MOV DI, OFFSET RECTANGLE_COLORS ; Iniciar con el primer color
+    MOV CX, 11              ; Número de rectángulos
+
+CHECK_RECTANGLES:
+    MOV BX, SI              ; Dirección de las coordenadas del rectángulo actual
+    MOV CX, [X_POS]         ; Coordenada X del mouse
+    MOV DX, [Y_POS]         ; Coordenada Y del mouse
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JZ RECTANGLE_FOUND     ; Si ZF está activado, se encontró un clic dentro del rectángulo
+
+    ; Incrementar punteros para pasar al siguiente rectángulo y su color
+    ADD SI, 8               ; Avanzar 8 bytes (4 palabras) a las coordenadas del siguiente rectángulo
+    INC DI                  ; Avanzar al siguiente color
+    LOOP CHECK_RECTANGLES   ; Repetir hasta comprobar todos los rectángulos
+
+    JMP MAIN_LOOP           ; Si no se encontró un clic dentro de ningún rectángulo, repetir el bucle principal
+
+RECTANGLE_FOUND:
+    CMP DI, OFFSET RECTANGLE_COLORS + 10
+    JE CLEAN_DRAWING_AREA
+    MOV AL, [DI]              ; Cargar el color del rectángulo seleccionado en AL
+    MOV [SELECTED_COLOR], AL          ; Cargar el color del rectángulo seleccionado en AL
+    CALL DRAWING_LOOP
+    JMP MAIN_LOOP           ; Continuar verificando clics
+
+CLEAN_DRAWING_AREA:
+    CALL CLEAR_DRAWING_AREA   ; Llamar a la función de limpiar el área de dibujo
+    JMP MAIN_LOOP             ; Volver al bucle principal
 MAIN ENDP
 
 END MAIN
+
