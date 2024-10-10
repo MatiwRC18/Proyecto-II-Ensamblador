@@ -874,6 +874,10 @@ MAIN PROC
     ; Mostrar el cursor del mouse
     CALL MOUSE_SHOW
 
+    MOV WORD PTR [DRAW_X], 243
+    MOV WORD PTR [DRAW_Y], 220
+     
+
     ; Bucle infinito para obtener la posición del mouse y el estado de los botones
 MAIN_LOOP:
     CALL MOUSE_GET_POSITION
