@@ -8,7 +8,11 @@
     X2 DW 0
     Y2 DW 0
 
-
+    Y DW  0
+    X DW  0
+    Y_C DW  0
+    X_C DW  0
+    E DW  0
 
    ; Cadenas de texto (terminadas en '$')
     txtGuardar DB 'Guardar bosquejo$'
@@ -18,20 +22,10 @@
     txtCampo DB 'Campo de texto$'
     txtDibujo DB 'Dibujo sin nombre$'
     txtColores DB 'Colores$'
+    txtSketch DB 'Etch A Sketch$'
+    txtGruesor DB 'Gruesor$'
 
-    ; Coordenadas para los rectángulos (botones)
-    RECT_1 DW 500, 80, 530, 110       ; X1, Y1, X2, Y2 del rectángulo 1 (color azul)
-    RECT_2 DW 500, 140, 530, 170      ; X1, Y1, X2, Y2 del rectángulo 2 (color verde)
-    RECT_3 DW 500, 200, 530, 230      ; X1, Y1, X2, Y2 del rectángulo 3 (color rojo)
-    RECT_4 DW 500, 260, 530, 290      ; X1, Y1, X2, Y2 del rectángulo 4 (color amarillo)
-    RECT_5 DW 500, 320, 530, 350      ; X1, Y1, X2, Y2 del rectángulo 5 (color blanco)
-    RECT_6 DW 565, 80, 595, 110       ; X1, Y1, X2, Y2 del rectángulo 6 (color morado)
-    RECT_7 DW 565, 140, 595, 170      ; X1, Y1, X2, Y2 del rectángulo 7 (color marrón)
-    RECT_8 DW 565, 200, 595, 230      ; X1, Y1, X2, Y2 del rectángulo 8 (color azul claro)
-    RECT_9 DW 565, 260, 595, 290      ; X1, Y1, X2, Y2 del rectángulo 9 (color verde claro)
-    RECT_10 DW 565, 320, 595, 350     ; X1, Y1, X2, Y2 del rectángulo 10 (color negro)
-    RECT_11 DW 360, 25, 460, 50       ; Coordenadas del área de limpieza
-
+    LINE_POINTS dw 0,0,0,0 
     ; Colores correspondientes a cada rectángulo
     RECTANGLE_COLORS DB 01H, 02H, 04H, 0EH, 0FH, 05H, 06H, 09H, 0AH, 00H
     SELECTED_COLOR DB 0 
@@ -43,10 +37,10 @@
     DRAW_X DW ?
     DRAW_Y DW ?
 
-    DRAW_X1 DW 25     ; Limite izquierdo del área de dibujo
-    DRAW_Y1 DW 65     ; Limite superior del área de dibujo
-    DRAW_X2 DW 460    ; Limite derecho del área de dibujo
-    DRAW_Y2 DW 375    ; Limite inferior del área de dibujo
+    DRAW_X1 DW 36     ; Limite izquierdo del área de dibujo
+    DRAW_Y1 DW 76     ; Limite superior del área de dibujo
+    DRAW_X2 DW 449    ; Limite derecho del área de dibujo
+    DRAW_Y2 DW 304    ; Limite inferior del área de dibujo
 
 
 .CODE
@@ -484,6 +478,164 @@ END_PRINT_TXT_COLORES:
     RET
 TEXT_COLORES ENDP
 
+TEXT_SKETCH PROC
+    ; Escribe en pantalla texto del botón de guardar
+    CLD
+    MOV SI, OFFSET txtSketch
+    TEXT_POSITION 21,24
+PRINT_TXT_SKETCH:
+    LODSB              ; Cargar el siguiente byte del mensaje en AL
+    CMP AL, '$'
+    JE END_PRINT_TXT_SKETCH
+    MOV AH, 0EH
+    MOV BH, 00H
+    MOV BL, 04H        ; Atributo del carácter (0Fh es blanco sobre negro)
+    INT 10H
+    JMP PRINT_TXT_SKETCH
+
+END_PRINT_TXT_SKETCH:
+    RET
+TEXT_SKETCH ENDP
+
+TEXT_GRUESOR PROC
+    ; Escribe en pantalla texto del botón de guardar
+    CLD
+    MOV SI, OFFSET txtGruesor
+    TEXT_POSITION 25,65
+PRINT_TXT_GRUESOR:
+    LODSB              ; Cargar el siguiente byte del mensaje en AL
+    CMP AL, '$'
+    JE END_PRINT_TXT_GRUESOR
+    MOV AH, 0EH
+    MOV BH, 00H
+    MOV BL, 0FH        ; Atributo del carácter (0Fh es blanco sobre negro)
+    INT 10H
+    JMP PRINT_TXT_GRUESOR
+
+END_PRINT_TXT_GRUESOR:
+    RET
+TEXT_GRUESOR ENDP
+
+CIRCLE PROC
+    
+    PUSH    DX              ; Guardar registro DX en la pila para preservarlo
+    PUSH    CX              ; Guardar registro CX en la pila para preservarlo
+
+    MOV     X, SI           ; X = SI (radio inicial)
+    MOV     X_C, DX         ; X_C = DX (coordenada X del centro del círculo)
+    MOV     Y_C, CX         ; Y_C = CX (coordenada Y del centro del círculo)
+
+CIR:
+    MOV     DX, X           ; Copiar X a DX para comparación
+    CMP     DX, Y           ; Comparar DX con Y (Y empieza en 0)
+    JNGE    FIN_CIR         ; Si X < Y, salir del bucle y terminar el círculo
+
+    CALL    DRAWCIRCLE      ; Llamar a la función que dibuja los puntos del círculo
+
+    INC     Y               ; Incrementar Y para la siguiente iteración (avanzar en el eje Y)
+
+    PUSH    AX              ; Guardar el valor de AX para preservar el resultado de la multiplicación
+
+    MOV     AX, 2           ; Preparar para calcular 2*Y
+    MUL     Y               ; AX = 2*Y
+    INC     AX              ; AX = 2*Y + 1
+    ADD     AX, E           ; E = E + (2*Y + 1)
+    MOV     E, AX           ; Actualizar E con el nuevo valor
+
+    SUB     AX, X           ; Calcular AX - X (diferencia entre AX y X)
+    MOV     DX, 2           ; Preparar para multiplicación por 2
+    MUL     DX              ; AX = 2*(AX - X)
+    INC     AX              ; AX = AX + 1
+    CMP     AX, 0           ; Comparar el resultado con 0
+    JG      E_CHECK         ; Si es positivo, ir a E_CHECK
+
+    POP     AX              ; Restaurar el valor anterior de AX
+    JMP     CIR             ; Volver al inicio del bucle para la siguiente iteración
+
+E_CHECK:
+    DEC     X               ; Decrementar X (avanzar hacia adentro en el eje X)
+    MOV     AX, X           ; Copiar X a AX
+    MOV     DX, 2           ; Preparar para multiplicación por 2
+    MUL     DX              ; AX = 2*X
+    MOV     DX, 1           ; DX = 1
+    SUB     DX, AX          ; DX = 1 - (2*X)
+    ADD     E, DX           ; E = E + (1 - 2*X)
+
+    POP     AX              ; Restaurar el valor anterior de AX
+    JMP     CIR             ; Volver al inicio del bucle para la siguiente iteración
+
+FIN_CIR:
+    MOV WORD PTR [Y], 0     ; Reiniciar Y a 0
+    MOV WORD PTR [X], 0     ; Reiniciar X a 0
+    MOV WORD PTR [E], 0     ; Reiniciar E a 0
+    MOV WORD PTR [Y_C], 0   ; Reiniciar Y_C a 0
+    MOV WORD PTR [X_C], 0   ; Reiniciar X_C a 0
+    
+    POP     CX              ; Restaurar el valor original de CX
+    POP     DX              ; Restaurar el valor original de DX
+
+    RET                     ; Retornar al final del procedimiento
+CIRCLE ENDP
+
+DRAWCIRCLE PROC
+    PUSH    DX              ; Guardar DX en la pila
+    PUSH    CX              ; Guardar CX en la pila
+
+    ; Dibujar el primer punto: (X_C + X, Y_C + Y)  ESTE 
+    MOV     DX, X_C
+    MOV     CX, Y_C
+    ADD     DX, X           ; DX = X_C + X
+    ADD     CX, Y           ; CX = Y_C + Y
+    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
+
+    ; Dibujar el segundo punto: (X_C + Y, Y_C + X) ESTE 
+    MOV     DX, X_C
+    MOV     CX, Y_C
+    ADD     DX, Y           ; DX = X_C + Y
+    ADD     CX, X           ; CX = Y_C + X
+    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
+
+    ; Dibujar el tercer punto: (X_C - Y, Y_C + X) ESTE 
+    MOV     DX, X_C
+    SUB     DX, Y           ; DX = X_C - Y
+    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
+
+    ; Dibujar el cuarto punto: (X_C - X, Y_C + Y)  ESTE 
+    MOV     DX, X_C
+    MOV     CX, Y_C
+    SUB     DX, X           ; DX = X_C - X
+    ADD     CX, Y           ; CX = Y_C + Y
+    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
+
+    ; Dibujar el quinto punto: (X_C - X, Y_C - Y) ESTE 
+    MOV     CX, Y_C
+    SUB     CX, Y           ; CX = Y_C - Y
+    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
+
+    ; Dibujar el sexto punto: (X_C - Y, Y_C - X) ESTE
+    MOV     DX, X_C
+    MOV     CX, Y_C
+    SUB     DX, Y           ; DX = X_C - Y
+    SUB     CX, X           ; CX = Y_C - X
+    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
+
+    ; Dibujar el séptimo punto: (X_C + Y, Y_C - X) ESTE  
+    MOV     DX, X_C
+    ADD     DX, Y           ; DX = X_C + Y
+    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
+
+    ; Dibujar el octavo punto: (X_C + X, Y_C - Y) ESTE 
+    MOV     DX, X_C
+    MOV     CX, Y_C
+    ADD     DX, X           ; DX = X_C + X
+    SUB     CX, Y           ; CX = Y_C - Y
+    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
+
+    POP     CX              ; Restaurar el valor original de CX
+    POP     DX              ; Restaurar el valor original de DX
+    RET                     ; Retornar al final del procedimiento
+DRAWCIRCLE ENDP
+
 SET_GRAFICS PROC 
 
     ; Inicializar la pantalla en modo gráfico
@@ -510,13 +662,30 @@ SET_GRAFICS PROC
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
-    ; Dibujar area de dibujo
+    ; DIBUJAR SKETCH
     MOV WORD PTR [X1], 25   ; Columna inicial (X1) para el tercer botón
     MOV WORD PTR [Y1], 65   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 460  ; Columna final (X2)
     MOV WORD PTR [Y2], 375  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
+    MOV AL, 04H
+    CALL FILL_RECTANGLE
+
+    ; Dibujar area de dibujo
+    MOV WORD PTR [X1], 35   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 75   ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 450  ; Columna final (X2)
+    MOV WORD PTR [Y2], 305  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE
     MOV AL, 0FH
+    CALL FILL_RECTANGLE
+
+    MOV WORD PTR [X1], 170   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 325  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 315  ; Columna final (X2)
+    MOV WORD PTR [Y2], 355  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 00H
     CALL FILL_RECTANGLE
 
     ; Dibujar boton "guardar bosquejo"
@@ -560,7 +729,7 @@ SET_GRAFICS PROC
     MOV WORD PTR [Y1], 25   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 615  ; Columna final (X2)
     MOV WORD PTR [Y2], 375  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
+    CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
@@ -655,48 +824,57 @@ SET_GRAFICS PROC
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
-    ; Dibujar cuadrado  "flecha arriba"
-    MOV WORD PTR [X1], 532  ; Columna inicial (X1) para el tercer botón
-    MOV WORD PTR [Y1], 390  ; Fila inicial (Y1)
-    MOV WORD PTR [X2], 562  ; Columna final (X2)
-    MOV WORD PTR [Y2], 420  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
-    MOV AL, 0CH
+    ; Dibujar area  "GRUESOR"
+    MOV WORD PTR [X1], 480  ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 390   ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 615  ; Columna final (X2)
+    MOV WORD PTR [Y2], 470  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 00H
     CALL FILL_RECTANGLE
-    ; CALL DRAW_TRIANGLE_UP
-   
+
+    ; Dibujar GRUESOR PEQUENO
+    MOV WORD PTR [X1], 505  ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 450   ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 515  ; Columna final (X2)
+    MOV WORD PTR [Y2], 460  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 0FH
+    CALL FILL_RECTANGLE
+
+    ; Dibujar GRUESOR MEDIANO
+    MOV WORD PTR [X1], 525  ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 440   ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 545  ; Columna final (X2)
+    MOV WORD PTR [Y2], 460  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 0FH
+    CALL FILL_RECTANGLE
+
+    ; Dibujar GRUESOR GRANDE
+    MOV WORD PTR [X1], 555  ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 430   ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 585  ; Columna final (X2)
+    MOV WORD PTR [Y2], 460  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 0FH
+    CALL FILL_RECTANGLE
+
     
-    ; Dibujar cuadrado  "flecha abajo"
-    MOV WORD PTR [X1], 532  ; Columna inicial (X1) para el tercer botón
-    MOV WORD PTR [Y1], 425   ; Fila inicial (Y1)
-    MOV WORD PTR [X2], 562  ; Columna final (X2)
-    MOV WORD PTR [Y2], 455  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
-    MOV AL, 0CH
-    CALL FILL_RECTANGLE
 
-    ; Dibujar cuadrado  "flecha izquierda"
-    MOV WORD PTR [X1], 497  ; Columna inicial (X1) para el tercer botón
-    MOV WORD PTR [Y1], 425   ; Fila inicial (Y1)
-    MOV WORD PTR [X2], 527 ; Columna final (X2)
-    MOV WORD PTR [Y2], 455  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
-    MOV AL, 0CH
-    CALL FILL_RECTANGLE
+    MOV     DX,340
+    MOV     CX,70
+    MOV     SI,28
+    MOV     AL, 0FH
+    CALL    CIRCLE
 
-    ; Dibujar cuadrado  "flecha derecha"
-    MOV WORD PTR [X1], 567  ; Columna inicial (X1) para el tercer botón
-    MOV WORD PTR [Y1], 425   ; Fila inicial (Y1)
-    MOV WORD PTR [X2], 597  ; Columna final (X2)
-    MOV WORD PTR [Y2], 455  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE
-    MOV AL, 0CH
-    CALL FILL_RECTANGLE
 
-    CALL DRAW_ARROW_UP
-    CALL DRAW_ARROW_DOWN
-    CALL DRAW_ARROW_RIGHT
-    CALL DRAW_ARROW_LEFT
+    MOV     DX,340
+    MOV     CX,415
+    MOV     SI,28
+    MOV     AL, 0FH
+    CALL    CIRCLE
+
 
     CALL TEXT_GUARDAR
     CALL TEXT_CARGAR
@@ -705,6 +883,8 @@ SET_GRAFICS PROC
     CALL TEXT_CAMPO
     CALL TEXT_DIBUJO
     CALL TEXT_COLORES
+    CALL TEXT_SKETCH
+    CALL TEXT_GRUESOR
 
     RET
 
@@ -768,7 +948,6 @@ IS_CLICK_INSIDE_RECTANGLE PROC
     RET
 IS_CLICK_INSIDE_RECTANGLE ENDP
 
-
 DRAWING_LOOP PROC
     ; Bucle para mover el cursor y dibujar con las teclas
 DRAW_LOOP:
@@ -792,25 +971,25 @@ DRAW_LOOP:
     JMP DRAW_LOOP
 
 DRAW_LEFT:
-    CMP [DRAW_X], 25   ; Límite izquierdo del área de dibujo
+    CMP [DRAW_X], 36   ; Límite izquierdo del área de dibujo
     JLE DRAW_LOOP
     DEC WORD PTR [DRAW_X]  ; Decrementar DRAW_X
     JMP DRAW_PIXEL
 
 DRAW_RIGHT:
-    CMP [DRAW_X], 460  ; Límite derecho del área de dibujo
+    CMP [DRAW_X], 449  ; Límite derecho del área de dibujo
     JGE DRAW_LOOP
     INC WORD PTR [DRAW_X]  ; Incrementar DRAW_X
     JMP DRAW_PIXEL
 
 DRAW_UP:
-    CMP [DRAW_Y], 65   ; Límite superior del área de dibujo
+    CMP [DRAW_Y], 76   ; Límite superior del área de dibujo
     JLE DRAW_LOOP
     DEC WORD PTR [DRAW_Y]  ; Decrementar DRAW_Y
     JMP DRAW_PIXEL
 
 DRAW_DOWN:
-    CMP [DRAW_Y], 375  ; Límite inferior del área de dibujo
+    CMP [DRAW_Y], 304  ; Límite inferior del área de dibujo
     JGE DRAW_LOOP
     INC WORD PTR [DRAW_Y]  ; Incrementar DRAW_Y
     JMP DRAW_PIXEL
@@ -830,13 +1009,13 @@ CHECK_MOUSE:
     JNE DRAW_LOOP  ; Si no se presionó el botón izquierdo, continuar dibujando
 
     ; Verificar si el clic está dentro del área de dibujo
-    CMP [X_POS], 25
+    CMP [X_POS], 36
     JL EXIT_DRAWING    ; Si está fuera del área de dibujo (izquierda), verificar rectángulos
-    CMP [X_POS], 460
+    CMP [X_POS], 449
     JG EXIT_DRAWING    ; Si está fuera del área de dibujo (derecha), verificar rectángulos
-    CMP [Y_POS], 65
+    CMP [Y_POS], 76
     JL EXIT_DRAWING    ; Si está fuera del área de dibujo (arriba), verificar rectángulos
-    CMP [Y_POS], 375
+    CMP [Y_POS], 304
     JG EXIT_DRAWING    ; Si está fuera del área de dibujo (abajo), verificar rectángulos
 
     MOV AX, [X_POS]   ; Cargar el valor de X_POS en AX
@@ -851,15 +1030,25 @@ EXIT_DRAWING:
 DRAWING_LOOP ENDP
 
 CLEAR_DRAWING_AREA PROC
-    MOV WORD PTR [X1], 25   ; Columna inicial (X1) para el tercer botón
-    MOV WORD PTR [Y1], 65   ; Fila inicial (Y1)
-    MOV WORD PTR [X2], 460  ; Columna final (X2)
-    MOV WORD PTR [Y2], 375  ; Fila final (Y2)
+    MOV WORD PTR [X1], 35   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 75 ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 450  ; Columna final (X2)
+    MOV WORD PTR [Y2], 305  ; Fila final (Y2)
     MOV AL, 0FH
     CALL FILL_RECTANGLE
+    MOV WORD PTR [DRAW_X], 242
+    MOV WORD PTR [DRAW_Y], 190
     RET
 CLEAR_DRAWING_AREA ENDP
 
+
+SET_LINE_POINTS MACRO X1,Y1,X2,Y2
+    LEA BX, LINE_POINTS
+    MOV WORD PTR [BX], X1
+    MOV WORD PTR [BX+2], Y1
+    MOV WORD PTR [BX+4], X2
+    MOV WORD PTR [BX+6], Y2
+ENDM
 ; ----------------------------------------------------------------
 ; PROGRAMA PRINCIPAL
 ; ----------------------------------------------------------------
@@ -874,9 +1063,9 @@ MAIN PROC
     ; Mostrar el cursor del mouse
     CALL MOUSE_SHOW
 
-    MOV WORD PTR [DRAW_X], 243
-    MOV WORD PTR [DRAW_Y], 220
-     
+    MOV WORD PTR [DRAW_X], 242
+    MOV WORD PTR [DRAW_Y], 190
+    
 
     ; Bucle infinito para obtener la posición del mouse y el estado de los botones
 MAIN_LOOP:
@@ -886,30 +1075,86 @@ MAIN_LOOP:
     CMP [BUTTONS], 1
     JNE MAIN_LOOP  ; Si no se presionó el botón izquierdo, repetir bucle
 
-    ; Verificar si el clic está dentro de algún rectángulo
-    MOV SI, OFFSET RECT_1  ; Iniciar con el primer rectángulo
-    MOV DI, OFFSET RECTANGLE_COLORS ; Iniciar con el primer color
-    MOV CX, 11              ; Número de rectángulos
-
-CHECK_RECTANGLES:
-    MOV BX, SI              ; Dirección de las coordenadas del rectángulo actual
-    MOV CX, [X_POS]         ; Coordenada X del mouse
-    MOV DX, [Y_POS]         ; Coordenada Y del mouse
+    SET_LINE_POINTS 500, 80, 530, 110
     CALL IS_CLICK_INSIDE_RECTANGLE
-    JZ RECTANGLE_FOUND     ; Si ZF está activado, se encontró un clic dentro del rectángulo
+    JNE CHECK_RECT_2
+    MOV DI, 0
+    JMP DRAW_PROCESS
+               
+    CHECK_RECT_2:
+    SET_LINE_POINTS 500, 140, 530, 170
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_3
+    MOV DI, 1
+    JMP DRAW_PROCESS
 
-    ; Incrementar punteros para pasar al siguiente rectángulo y su color
-    ADD SI, 8               ; Avanzar 8 bytes (4 palabras) a las coordenadas del siguiente rectángulo
-    INC DI                  ; Avanzar al siguiente color
-    LOOP CHECK_RECTANGLES   ; Repetir hasta comprobar todos los rectángulos
+    CHECK_RECT_3:
+    SET_LINE_POINTS 500, 200, 530, 230
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_4
+    MOV DI, 2
+    JMP DRAW_PROCESS
 
-    JMP MAIN_LOOP           ; Si no se encontró un clic dentro de ningún rectángulo, repetir el bucle principal
+    CHECK_RECT_4:
+    SET_LINE_POINTS 500, 260, 530, 290
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_5
+    MOV DI, 3
+    JMP DRAW_PROCESS
 
-RECTANGLE_FOUND:
-    CMP DI, OFFSET RECTANGLE_COLORS + 10
+    CHECK_RECT_5:
+    SET_LINE_POINTS 500, 320, 530, 350
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_6
+    MOV DI, 4
+    JMP DRAW_PROCESS
+
+    CHECK_RECT_6:
+    SET_LINE_POINTS 565, 80, 595, 110
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_7
+    MOV DI, 5
+    JMP DRAW_PROCESS
+
+    CHECK_RECT_7:
+    SET_LINE_POINTS 565, 140, 595, 170
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_8
+    MOV DI, 6
+    JMP DRAW_PROCESS
+
+    CHECK_RECT_8:
+    SET_LINE_POINTS 565, 200, 595, 230
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_9
+    MOV DI, 7
+    JMP DRAW_PROCESS
+
+    CHECK_RECT_9:
+    SET_LINE_POINTS 565, 260, 595, 290
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_10
+    MOV DI, 8
+    JMP DRAW_PROCESS 
+
+    CHECK_RECT_10:
+    SET_LINE_POINTS 565, 320, 595, 350
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_11
+    MOV DI, 9
+    JMP DRAW_PROCESS 
+
+    CHECK_RECT_11:
+    SET_LINE_POINTS 360, 25, 460, 50
+    CALL IS_CLICK_INSIDE_RECTANGLE
     JE CLEAN_DRAWING_AREA
-    MOV AL, [DI]              ; Cargar el color del rectángulo seleccionado en AL
-    MOV [SELECTED_COLOR], AL          ; Cargar el color del rectángulo seleccionado en AL
+
+    
+    CALL DRAWING_LOOP
+
+DRAW_PROCESS:
+    MOV AL, [RECTANGLE_COLORS + DI]   ; Cargar el color de la tabla en AL
+    MOV [SELECTED_COLOR], AL
     CALL DRAWING_LOOP
     JMP MAIN_LOOP           ; Continuar verificando clics
 
