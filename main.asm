@@ -29,6 +29,7 @@
     ; Colores correspondientes a cada rectángulo
     RECTANGLE_COLORS DB 01H, 02H, 04H, 0EH, 0FH, 05H, 06H, 09H, 0AH, 00H
     SELECTED_COLOR DB 0 
+    SELECTED_THICKNESS DW 0
 
     X_POS DW 0        ; Almacena la posición X del mouse
     Y_POS DW 0        ; Almacena la posición Y del mouse
@@ -684,7 +685,7 @@ SET_GRAFICS PROC
     MOV WORD PTR [Y1], 325  ; Fila inicial (Y1)
     MOV WORD PTR [X2], 315  ; Columna final (X2)
     MOV WORD PTR [Y2], 355  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE_INTERACTIVE
+    CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
@@ -954,59 +955,306 @@ DRAW_LOOP:
     ; Verificar si se presiona una tecla
     MOV AH, 01h
     INT 16h
-    JZ CHECK_MOUSE  ; Si no se presiona tecla, revisar el mouse
+    JZ CHECK_MOUSE_BRIDGE  ; Si no se presiona tecla, revisar el mouse
 
     ; Leer la tecla presionada
     MOV AH, 00h
     INT 16h
 
     CMP AL, 'a'   ; Tecla A (izquierda)
-    JE DRAW_LEFT
+    JE DRAW_LEFT_BRIDGE
     CMP AL, 'd'   ; Tecla D (derecha)
-    JE DRAW_RIGHT
+    JE DRAW_RIGHT_BRIDGE
     CMP AL, 'w'   ; Tecla W (arriba)
-    JE DRAW_UP
+    JE DRAW_UP_BRIDGE
     CMP AL, 's'   ; Tecla S (abajo)
-    JE DRAW_DOWN
+    JE DRAW_DOWN_BRIDGE
     JMP DRAW_LOOP
+
+DRAW_LEFT_BRIDGE:
+    JMP DRAW_LEFT
+
+DRAW_RIGHT_BRIDGE:
+    JMP DRAW_RIGHT
+
+DRAW_UP_BRIDGE:
+    JMP DRAW_UP
+
+DRAW_DOWN_BRIDGE:
+    JMP DRAW_DOWN
+
+CHECK_MOUSE_BRIDGE:
+    JMP CHECK_MOUSE
 
 DRAW_LEFT:
+    CMP [SELECTED_THICKNESS], 1
+    JE LEFT_ONE
+    CMP [SELECTED_THICKNESS], 2 
+    JE LEFT_TWO
+    CMP [SELECTED_THICKNESS], 3 
+    JE LEFT_THREE
+LEFT_ONE:
     CMP [DRAW_X], 36   ; Límite izquierdo del área de dibujo
-    JLE DRAW_LOOP
+    JLE DRAW_LOOP_BRIDGE_1
     DEC WORD PTR [DRAW_X]  ; Decrementar DRAW_X
-    JMP DRAW_PIXEL
-
-DRAW_RIGHT:
-    CMP [DRAW_X], 449  ; Límite derecho del área de dibujo
-    JGE DRAW_LOOP
-    INC WORD PTR [DRAW_X]  ; Incrementar DRAW_X
-    JMP DRAW_PIXEL
-
-DRAW_UP:
-    CMP [DRAW_Y], 76   ; Límite superior del área de dibujo
-    JLE DRAW_LOOP
-    DEC WORD PTR [DRAW_Y]  ; Decrementar DRAW_Y
-    JMP DRAW_PIXEL
-
-DRAW_DOWN:
-    CMP [DRAW_Y], 304  ; Límite inferior del área de dibujo
-    JGE DRAW_LOOP
-    INC WORD PTR [DRAW_Y]  ; Incrementar DRAW_Y
-    JMP DRAW_PIXEL
-
-DRAW_PIXEL:
-    ; Dibujar el píxel con el color seleccionado en SELECTED_COLOR
-    MOV AL, [SELECTED_COLOR] 
-    MOV CX, [DRAW_X]
-    MOV DX, [DRAW_Y]
-    CALL PRINT_PIXEL
+    CALL DRAW_PIXEL
+    JMP DRAW_LOOP
+LEFT_TWO:
+    CMP [DRAW_X], 36   ; Límite izquierdo del área de dibujo
+    JLE DRAW_LOOP_BRIDGE_1
+    DEC WORD PTR [DRAW_X]
+    CALL DRAW_PIXEL
+    CMP [DRAW_X], 36   ; Límite izquierdo del área de dibujo
+    JLE DRAW_LOOP_BRIDGE_1
+    CMP [DRAW_Y], 304
+    JGE DRAW_LOOP_BRIDGE_1 
+    INC WORD PTR [DRAW_Y]
+    CALL DRAW_PIXEL
+    DEC WORD PTR [DRAW_Y]
+    CMP [DRAW_X], 36   ; Límite izquierdo del área de dibujo
+    JLE DRAW_LOOP_BRIDGE_1
+    CMP [DRAW_Y], 76
+    JLE DRAW_LOOP_BRIDGE_1
+    DEC WORD PTR [DRAW_Y]
+    CALL DRAW_PIXEL
+    INC WORD PTR [DRAW_Y]
     JMP DRAW_LOOP
 
+DRAW_LOOP_BRIDGE_1:
+    JMP DRAW_LOOP
+
+LEFT_THREE:
+    CMP [DRAW_X], 36   ; Límite izquierdo del área de dibujo
+    JLE DRAW_LOOP_1
+    DEC WORD PTR [DRAW_X]
+    CALL DRAW_PIXEL
+    CMP [DRAW_X], 36   ; Límite izquierdo del área de dibujo
+    JLE DRAW_LOOP_1
+    CMP [DRAW_Y], 304
+    JGE DRAW_LOOP_1 
+    INC WORD PTR [DRAW_Y]
+    CALL DRAW_PIXEL
+    DEC WORD PTR [DRAW_Y]
+    CMP [DRAW_X], 36   ; Límite izquierdo del área de dibujo
+    JLE DRAW_LOOP_1
+    CMP [DRAW_Y], 76
+    JLE DRAW_LOOP_1
+    DEC WORD PTR [DRAW_Y]
+    CALL DRAW_PIXEL
+    INC WORD PTR [DRAW_Y]
+    ADD WORD PTR [DRAW_Y], 2
+    CALL DRAW_PIXEL
+    SUB WORD PTR [DRAW_Y], 4
+    CALL DRAW_PIXEL
+    ADD WORD PTR [DRAW_Y], 2
+    JMP DRAW_LOOP
+    
+DRAW_LOOP_1:
+    JMP DRAW_LOOP
+    
+DRAW_RIGHT:
+    CMP [SELECTED_THICKNESS], 1
+    JE RIGHT_ONE
+    CMP [SELECTED_THICKNESS], 2 
+    JE RIGHT_TWO
+    CMP [SELECTED_THICKNESS], 3 
+    JE RIGHT_THREE
+RIGHT_ONE:
+    CMP [DRAW_X], 449  ; Límite derecho del área de dibujo
+    JGE DRAW_LOOP_BRIDGE_2
+    INC WORD PTR [DRAW_X]  ; Incrementar DRAW_X
+    CALL DRAW_PIXEL
+    JMP DRAW_LOOP
+RIGHT_TWO:
+    CMP [DRAW_X], 449  ; Límite derecho del área de dibujo
+    JGE DRAW_LOOP_BRIDGE_2
+    INC WORD PTR [DRAW_X]  ; Incrementar DRAW_X
+    CALL DRAW_PIXEL
+    CMP [DRAW_X], 449  ; Límite derecho del área de dibujo
+    JGE DRAW_LOOP_BRIDGE_2
+    CMP [DRAW_Y], 304
+    JGE DRAW_LOOP_BRIDGE_2
+    INC WORD PTR [DRAW_Y]
+    CALL DRAW_PIXEL
+    DEC WORD PTR [DRAW_Y]
+    CMP [DRAW_X], 449  ; Límite derecho del área de dibujo
+    JGE DRAW_LOOP_BRIDGE_2
+    CMP [DRAW_Y], 76
+    JLE DRAW_LOOP_BRIDGE_2
+    DEC WORD PTR [DRAW_Y]
+    CALL DRAW_PIXEL
+    INC WORD PTR [DRAW_Y]
+    JMP DRAW_LOOP
+
+DRAW_LOOP_BRIDGE_2:
+    JMP DRAW_LOOP
+
+RIGHT_THREE:
+    CMP [DRAW_X], 449  ; Límite derecho del área de dibujo
+    JGE DRAW_LOOP_2
+    INC WORD PTR [DRAW_X]  ; Incrementar DRAW_X
+    CALL DRAW_PIXEL
+    CMP [DRAW_X], 449  ; Límite derecho del área de dibujo
+    JGE DRAW_LOOP_2
+    CMP [DRAW_Y], 304
+    JGE DRAW_LOOP_2
+    INC WORD PTR [DRAW_Y]
+    CALL DRAW_PIXEL
+    DEC WORD PTR [DRAW_Y]
+    CMP [DRAW_X], 449  ; Límite derecho del área de dibujo
+    JGE DRAW_LOOP_2
+    CMP [DRAW_Y], 76
+    JLE DRAW_LOOP_2
+    DEC WORD PTR [DRAW_Y]
+    CALL DRAW_PIXEL
+    INC WORD PTR [DRAW_Y]
+    ADD WORD PTR [DRAW_Y], 2
+    CALL DRAW_PIXEL
+    SUB WORD PTR [DRAW_Y], 4
+    CALL DRAW_PIXEL
+    ADD WORD PTR [DRAW_Y], 2
+    JMP DRAW_LOOP
+
+DRAW_LOOP_2:
+    JMP DRAW_LOOP
+
+DRAW_UP:
+    CMP [SELECTED_THICKNESS], 1
+    JE UP_ONE
+    CMP [SELECTED_THICKNESS], 2 
+    JE UP_TWO
+    CMP [SELECTED_THICKNESS], 3 
+    JE UP_THREE
+UP_ONE:
+    CMP [DRAW_Y], 76   ; Límite superior del área de dibujo
+    JLE DRAW_LOOP_BRIDGE_3
+    DEC WORD PTR [DRAW_Y]  ; Decrementar DRAW_Y
+    CALL DRAW_PIXEL   
+    JMP DRAW_LOOP
+UP_TWO:
+    CMP [DRAW_Y], 76   ; Límite superior del área de dibujo
+    JLE DRAW_LOOP_BRIDGE_3
+    DEC WORD PTR [DRAW_Y]  ; Decrementar DRAW_Y
+    CALL DRAW_PIXEL
+    CMP [DRAW_Y], 76   ; Límite superior del área de dibujo
+    JLE DRAW_LOOP_BRIDGE_3
+    CMP [DRAW_X], 449   
+    JGE DRAW_LOOP_BRIDGE_3
+    INC WORD PTR [DRAW_X]
+    CALL DRAW_PIXEL
+    DEC WORD PTR [DRAW_X]
+    CMP [DRAW_Y], 76   ; Límite superior del área de dibujo
+    JLE DRAW_LOOP_BRIDGE_3
+    CMP [DRAW_X], 36   
+    JLE DRAW_LOOP_BRIDGE_3
+    DEC WORD PTR [DRAW_X]
+    CALL DRAW_PIXEL
+    INC WORD PTR [DRAW_X]
+    JMP DRAW_LOOP
+
+DRAW_LOOP_BRIDGE_3:
+    JMP DRAW_LOOP
+
+UP_THREE:
+    CMP [DRAW_Y], 76   ; Límite superior del área de dibujo
+    JLE DRAW_LOOP_3
+    DEC WORD PTR [DRAW_Y]  ; Decrementar DRAW_Y
+    CALL DRAW_PIXEL
+    CMP [DRAW_Y], 76   ; Límite superior del área de dibujo
+    JLE DRAW_LOOP_3
+    CMP [DRAW_X], 449   
+    JGE DRAW_LOOP_3
+    INC WORD PTR [DRAW_X]
+    CALL DRAW_PIXEL
+    DEC WORD PTR [DRAW_X]
+    CMP [DRAW_Y], 76   ; Límite superior del área de dibujo
+    JLE DRAW_LOOP_3
+    CMP [DRAW_X], 36   
+    JLE DRAW_LOOP_3
+    DEC WORD PTR [DRAW_X]
+    CALL DRAW_PIXEL
+    INC WORD PTR [DRAW_X]
+    ADD WORD PTR [DRAW_X], 2
+    CALL DRAW_PIXEL
+    SUB WORD PTR [DRAW_X], 4
+    CALL DRAW_PIXEL
+    ADD WORD PTR [DRAW_X], 2
+    JMP DRAW_LOOP
+
+DRAW_LOOP_3:
+    JMP DRAW_LOOP
+
+DRAW_DOWN:
+    CMP [SELECTED_THICKNESS], 1
+    JE DOWN_ONE
+    CMP [SELECTED_THICKNESS], 2 
+    JE DOWN_TWO
+    CMP [SELECTED_THICKNESS], 3 
+    JE DOWN_THREE
+DOWN_ONE:
+    CMP [DRAW_Y], 304  ; Límite inferior del área de dibujo
+    JGE DRAW_LOOP_BRIDGE_4
+    INC WORD PTR [DRAW_Y]  ; Incrementar DRAW_Y
+    CALL DRAW_PIXEL
+    JMP DRAW_LOOP
+DOWN_TWO:
+    CMP [DRAW_Y], 304  ; Límite inferior del área de dibujo
+    JGE DRAW_LOOP_BRIDGE_4
+    INC WORD PTR [DRAW_Y]  ; Incrementar DRAW_Y
+    CALL DRAW_PIXEL
+    CMP [DRAW_Y], 304  ; Límite inferior del área de dibujo
+    JGE DRAW_LOOP_BRIDGE_4
+    CMP [DRAW_X], 449  ; Límite inferior del área de dibujo
+    JGE DRAW_LOOP_BRIDGE_4
+    INC WORD PTR [DRAW_X]
+    CALL DRAW_PIXEL
+    DEC WORD PTR [DRAW_X]
+    CMP [DRAW_Y], 304  ; Límite inferior del área de dibujo
+    JGE DRAW_LOOP_BRIDGE_4
+    CMP [DRAW_X], 36  
+    JLE DRAW_LOOP_BRIDGE_4
+    DEC WORD PTR [DRAW_X]
+    CALL DRAW_PIXEL
+    INC WORD PTR [DRAW_X]
+    JMP DRAW_LOOP
+
+DRAW_LOOP_BRIDGE_4:
+    JMP DRAW_LOOP 
+
+DOWN_THREE:
+    CMP [DRAW_Y], 304  ; Límite inferior del área de dibujo
+    JGE DRAW_LOOP_4
+    INC WORD PTR [DRAW_Y]  ; Incrementar DRAW_Y
+    CALL DRAW_PIXEL
+    CMP [DRAW_Y], 304  ; Límite inferior del área de dibujo
+    JGE DRAW_LOOP_4
+    CMP [DRAW_X], 449  ; Límite inferior del área de dibujo
+    JGE DRAW_LOOP_4
+    INC WORD PTR [DRAW_X]
+    CALL DRAW_PIXEL
+    DEC WORD PTR [DRAW_X]
+    CMP [DRAW_Y], 304  ; Límite inferior del área de dibujo
+    JGE DRAW_LOOP_4
+    CMP [DRAW_X], 36  
+    JLE DRAW_LOOP_4
+    DEC WORD PTR [DRAW_X]
+    CALL DRAW_PIXEL
+    INC WORD PTR [DRAW_X]
+    ADD WORD PTR [DRAW_X], 2
+    CALL DRAW_PIXEL
+    SUB WORD PTR [DRAW_X], 4
+    CALL DRAW_PIXEL
+    ADD WORD PTR [DRAW_X], 2
+    JMP DRAW_LOOP
+
+DRAW_LOOP_4:
+    JMP DRAW_LOOP
+    
 CHECK_MOUSE:
     ; Verificar si se presionó el botón izquierdo del mouse
     CALL MOUSE_GET_POSITION
     CMP [BUTTONS], 1
-    JNE DRAW_LOOP  ; Si no se presionó el botón izquierdo, continuar dibujando
+    JNE DRAW_LOOP_5  ; Si no se presionó el botón izquierdo, continuar dibujando
 
     ; Verificar si el clic está dentro del área de dibujo
     CMP [X_POS], 36
@@ -1025,10 +1273,21 @@ CHECK_MOUSE:
     MOV [DRAW_Y], AX  ; Mover el valor de AX a DRAW_Y
     JMP DRAW_LOOP  ; Volver al ciclo de dibujo
 
+DRAW_LOOP_5:
+    JMP DRAW_LOOP
+
 EXIT_DRAWING:
     RET
 DRAWING_LOOP ENDP
 
+DRAW_PIXEL PROC
+    ; Dibujar el píxel con el color seleccionado en SELECTED_COLOR
+    MOV AL, [SELECTED_COLOR] 
+    MOV CX, [DRAW_X]
+    MOV DX, [DRAW_Y]
+    CALL PRINT_PIXEL
+    RET
+DRAW_PIXEL ENDP
 CLEAR_DRAWING_AREA PROC
     MOV WORD PTR [X1], 35   ; Columna inicial (X1) para el tercer botón
     MOV WORD PTR [Y1], 75 ; Fila inicial (Y1)
@@ -1145,6 +1404,24 @@ MAIN_LOOP:
     JMP DRAW_PROCESS 
 
     CHECK_RECT_11:
+    SET_LINE_POINTS 505, 450, 515, 460
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_12
+    JMP THICKNESS_1
+
+    CHECK_RECT_12:
+    SET_LINE_POINTS 525, 440, 545, 460
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_13
+    JMP THICKNESS_2
+
+    CHECK_RECT_13:
+    SET_LINE_POINTS 555, 430, 585, 460
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_14
+    JMP THICKNESS_3 
+
+    CHECK_RECT_14:
     SET_LINE_POINTS 360, 25, 460, 50
     CALL IS_CLICK_INSIDE_RECTANGLE
     JE CLEAN_DRAWING_AREA
@@ -1161,6 +1438,22 @@ DRAW_PROCESS:
 CLEAN_DRAWING_AREA:
     CALL CLEAR_DRAWING_AREA   ; Llamar a la función de limpiar el área de dibujo
     JMP MAIN_LOOP             ; Volver al bucle principal
+
+THICKNESS_1:
+    MOV [SELECTED_THICKNESS], 1
+    CALL DRAWING_LOOP
+    JMP MAIN_LOOP           ; Continuar verificando clics
+
+THICKNESS_2:
+    MOV [SELECTED_THICKNESS], 2
+    CALL DRAWING_LOOP
+    JMP MAIN_LOOP           ; Continuar verificando clics
+
+THICKNESS_3:
+    MOV [SELECTED_THICKNESS], 3
+    CALL DRAWING_LOOP
+    JMP MAIN_LOOP           ; Continuar verificando clics
+
 MAIN ENDP
 
 END MAIN
