@@ -19,7 +19,7 @@
     txtCargar DB 'Cargar bosquejo$'
     txtLimpiar DB 'Limpiar$'
     txtImagen DB 'Insertar imagen$'
-    txtCampo DB 'Campo de texto$'
+    txtCampo DB 'Texto aqui:$'
     txtDibujo DB 'Dibujo sin nombre$'
     txtColores DB 'Colores$'
     txtSketch DB 'Etch A Sketch$'
@@ -43,6 +43,23 @@
     DRAW_X2 DW 449    ; Limite derecho del área de dibujo
     DRAW_Y2 DW 304    ; Limite inferior del área de dibujo
 
+    ; Definir el área de texto y límites
+    TXT_COLUMN_START EQU 36      ; Columna inicial (aproximado desde 190px)
+    TXT_ROW_START    EQU 25      ; Fila inicial (aproximado desde 395px)
+    MAX_COLUMNS      EQU 57      ; Máximo número de columnas en la línea
+
+    ; Buffers
+    FILENAME_BUFFER DB 100 DUP(0)  ; Almacenar el nombre del archivo
+    FILENAME_INDEX DW 0           ; Índice para el buffer del nombre
+    BYTE_BUFFER DB 0  ; Buffer para almacenar el byte temporalmente
+    
+    CURSOR_ROW  DB TXT_ROW_START ; Inicializar la fila del cursor
+    CURSOR_COL  DB TXT_COLUMN_START ; Inicializar la columna del cursor
+
+    DRAW_X_START EQU 36    ; Coordenada X inicial del área de dibujo
+    DRAW_X_END   EQU 449   ; Coordenada X final del área de dibujo
+    DRAW_Y_START EQU 76    ; Coordenada Y inicial del área de dibujo
+    DRAW_Y_END   EQU 304   ; Coordenada Y final del área de dibujo
 
 .CODE
 
@@ -426,7 +443,7 @@ TEXT_CAMPO PROC
     ; Escribe en pantalla texto del botón de guardar
     CLD
     MOV SI, OFFSET txtCampo
-    TEXT_POSITION 25,33
+    TEXT_POSITION 25,24
 PRINT_TXT_CAMPO:
     LODSB              ; Cargar el siguiente byte del mensaje en AL
     CMP AL, '$'
@@ -671,7 +688,7 @@ SET_GRAFICS PROC
     CALL DRAW_RECTANGLE
     MOV AL, 04H
     CALL FILL_RECTANGLE
-
+    
     ; Dibujar area de dibujo
     MOV WORD PTR [X1], 35   ; Columna inicial (X1) para el tercer botón
     MOV WORD PTR [Y1], 75   ; Fila inicial (Y1)
@@ -1288,6 +1305,7 @@ DRAW_PIXEL PROC
     CALL PRINT_PIXEL
     RET
 DRAW_PIXEL ENDP
+
 CLEAR_DRAWING_AREA PROC
     MOV WORD PTR [X1], 35   ; Columna inicial (X1) para el tercer botón
     MOV WORD PTR [Y1], 75 ; Fila inicial (Y1)
@@ -1300,7 +1318,6 @@ CLEAR_DRAWING_AREA PROC
     RET
 CLEAR_DRAWING_AREA ENDP
 
-
 SET_LINE_POINTS MACRO X1,Y1,X2,Y2
     LEA BX, LINE_POINTS
     MOV WORD PTR [BX], X1
@@ -1308,6 +1325,235 @@ SET_LINE_POINTS MACRO X1,Y1,X2,Y2
     MOV WORD PTR [BX+4], X2
     MOV WORD PTR [BX+6], Y2
 ENDM
+
+WRITE_CHARACTER PROC
+    ;IDK
+WRITE_LOOP:
+    MOV AH, 01h
+    INT 16h
+    JZ CHECK_CLICK
+
+    ; Leer la tecla presionada
+    MOV AH, 00h
+    INT 16h              ; Esperar la entrada del usuario
+    
+    ; Verificar si es Backspace
+    CMP AL, 8
+    JE HANDLE_BACKSPACE  ; Llamar a la rutina de retroceso
+
+   ; Guardar el carácter en el buffer de nombre del archivo
+    MOV SI, FILENAME_INDEX
+    ADD SI, OFFSET FILENAME_BUFFER
+    MOV [SI], AL  ; Guardar el carácter ingresado
+
+    ; Posicionar el cursor en la pantalla usando INT 10h, Función 02h
+    MOV AH, 02h          ; Función para mover el cursor
+    MOV BH, 0            ; Página 0
+    MOV DH, CURSOR_ROW   ; Fila actual
+    MOV DL, CURSOR_COL   ; Columna actual
+    INT 10h              ; Llamar a la BIOS para mover el cursor
+
+    ; Imprimir el carácter en la pantalla usando BIOS
+    MOV AH, 0Eh          ; Función para imprimir en modo texto
+    MOV BH, 0            ; Página 0
+    MOV BL, 0EH            ; Color blanco
+    INT 10h              ; Llamada a la BIOS para imprimir el carácter
+
+    ; Incrementar el índice y la columna del cursor
+    INC FILENAME_INDEX
+    INC CURSOR_COL
+
+    ; Verificar si alcanzamos el límite de la línea
+    CMP CURSOR_COL, MAX_COLUMNS
+    JGE DONE_WRITING  ; Si se alcanza el límite, dejar de escribir
+
+    JMP WRITE_LOOP
+
+HANDLE_BACKSPACE:
+    ; Verificar si hay texto que borrar
+    CMP FILENAME_INDEX, 0
+    JLE NO_BACKSPACE
+
+    ; Retroceder el índice y la columna del cursor
+    DEC FILENAME_INDEX
+    DEC CURSOR_COL
+
+    ; Posicionar el cursor en la pantalla usando INT 10h, Función 02h
+    MOV AH, 02h          ; Función para mover el cursor
+    MOV BH, 0            ; Página 0
+    MOV DH, CURSOR_ROW   ; Fila actual
+    MOV DL, CURSOR_COL   ; Columna actual
+    INT 10h              ; Llamar a la BIOS para mover el cursor
+
+    ; Sobrescribir el carácter con un espacio en blanco
+    MOV AH, 0Eh
+    MOV AL, ' '          ; Imprimir espacio en blanco
+    MOV BH, 0
+    MOV BL, 0            ; Color negro
+    INT 10h              ; Imprimir espacio
+
+    JMP WRITE_LOOP
+
+NO_BACKSPACE:
+    JMP WRITE_LOOP
+
+CHECK_CLICK:
+    CALL MOUSE_GET_POSITION
+    CMP [BUTTONS], 1
+    JE DONE_WRITING
+    JMP WRITE_LOOP
+
+DONE_WRITING:
+    RET
+WRITE_CHARACTER ENDP
+
+RESET_CAMPO_TXT PROC
+    ; Dibujar cuadro de texto "Campo de texto"
+    MOV WORD PTR [X1], 280  ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 390  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 460  ; Columna final (X2)
+    MOV WORD PTR [Y2], 420  ; Fila final (Y2)
+    MOV AL, 00H
+    CALL FILL_RECTANGLE
+    RET
+
+RESET_CAMPO_TXT ENDP 
+
+SAVE_SKETCH PROC
+    ; Preparar el nombre del archivo con ".txt"
+    MOV SI, FILENAME_INDEX
+    ADD SI, OFFSET FILENAME_BUFFER
+    MOV BYTE PTR [SI], '.'      ; Agregar '.txt' al nombre
+    MOV BYTE PTR [SI+1], 't'
+    MOV BYTE PTR [SI+2], 'x'
+    MOV BYTE PTR [SI+3], 't'
+    ADD FILENAME_INDEX, 4
+
+    ; Crear el archivo
+    MOV AH, 3Ch              ; Crear archivo (Función 3Ch)
+    MOV CX, 0                ; Atributo: Archivo normal
+    LEA DX, FILENAME_BUFFER  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR            ; Saltar si hay error
+
+    MOV BX, AX               ; Guardar el handle del archivo
+
+    ; Inicializar coordenadas para recorrer el área de dibujo
+    MOV DX, DRAW_Y_START     ; Y inicial (fila)
+
+ROW_LOOP:
+    MOV CX, DRAW_X_START     ; X inicial (columna)
+
+COLUMN_LOOP:
+    ; Leer el color del píxel en (CX, DX)
+    MOV AH, 0Dh              ; Función de BIOS para leer píxel
+    MOV BH, 0                ; Página 0
+    INT 10h                  ; Llamada a BIOS para leer el píxel
+
+    ; Convertir el color a ASCII
+   
+    ; Convertir el color a ASCII y guardarlo en BYTE_BUFFER
+    CALL COLOR_TO_ASCII
+    MOV BYTE_BUFFER, AL      ; Guardar el resultado en el buffer
+
+    ; Escribir el valor en el archivo
+    CALL WRITE_BYTE
+
+    ; Avanzar a la siguiente columna (X)
+    INC CX
+    CMP CX, DRAW_X_END       ; Verificar si llegamos al final de la fila
+    JL COLUMN_LOOP
+
+    ; Escribir '@' para indicar fin de la fila
+    MOV AL, '@'
+    MOV BYTE_BUFFER, AL
+    CALL WRITE_BYTE
+
+    ; Agregar salto de línea después de '@'
+    MOV AL, 0Dh   ; Carácter de retorno de carro
+    MOV BYTE_BUFFER, AL
+    CALL WRITE_BYTE
+
+    MOV AL, 0Ah   ; Carácter de nueva línea
+    MOV BYTE_BUFFER, AL
+    CALL WRITE_BYTE
+
+    ; Avanzar a la siguiente fila (Y)
+    INC DX
+    CMP DX, DRAW_Y_END       ; Verificar si llegamos al final del área de dibujo
+    JL ROW_LOOP
+
+    ; Escribir '%' para indicar fin del archivo
+    MOV AL, '%'
+    MOV BYTE_BUFFER, AL
+    CALL WRITE_BYTE
+
+    ; Cerrar el archivo
+    MOV AH, 3Eh              ; Cerrar archivo (Función 3Eh)
+    MOV BX, BX               ; Handle del archivo
+    INT 21h
+
+    ; Limpiar el campo de texto para permitir escribir un nuevo nombre
+    CALL RESET_FILENAME_BUFFER
+
+    RET
+FILE_ERROR:
+    RET
+SAVE_SKETCH ENDP
+
+WRITE_BYTE PROC
+    ; Guardar coordenadas para no perderlas
+    PUSH CX
+    PUSH DX
+
+    ; Escribir un byte en el archivo
+    MOV AH, 40h              ; Función para escribir en archivo
+    MOV BX, BX               ; Handle del archivo
+    MOV CX, 1                ; Escribir 1 byte
+    LEA DX, BYTE_BUFFER      ; Dirección del byte
+    INT 21h
+
+    ; Restaurar coordenadas
+    POP DX
+    POP CX
+
+    RET
+WRITE_BYTE ENDP
+
+COLOR_TO_ASCII PROC
+    ; AL contiene el valor del color (0-15)
+    CMP AL, 10
+    JL DIGIT_COLOR           ; Si es menor que 10, es un dígito
+
+    ; Convertir valores de 10-15 en letras 'A'-'F'
+    ADD AL, 55               ; 'A' = 65, entonces 10 + 55 = 65 ('A')
+    RET
+
+DIGIT_COLOR:
+    ADD AL, 48               ; '0' = 48, entonces 0-9 se convierten en '0'-'9'
+    RET
+COLOR_TO_ASCII ENDP
+
+RESET_FILENAME_BUFFER PROC
+    ; Limpiar el FILENAME_BUFFER y reiniciar FILENAME_INDEX
+    MOV CX, 100               ; Tamaño del buffer
+    MOV SI, OFFSET FILENAME_BUFFER
+
+CLEAR_BUFFER_LOOP:
+    MOV BYTE PTR [SI], 0      ; Llenar con ceros
+    INC SI
+    LOOP CLEAR_BUFFER_LOOP
+
+    ; Reiniciar el índice del buffer
+    MOV FILENAME_INDEX, 0
+    MOV CURSOR_ROW, TXT_ROW_START ; Inicializar la fila del cursor
+    MOV CURSOR_COL, TXT_COLUMN_START ; Inicializar la columna del cursor
+
+    RET
+RESET_FILENAME_BUFFER ENDP
+
+
+
 ; ----------------------------------------------------------------
 ; PROGRAMA PRINCIPAL
 ; ----------------------------------------------------------------
@@ -1424,8 +1670,19 @@ MAIN_LOOP:
     CHECK_RECT_14:
     SET_LINE_POINTS 360, 25, 460, 50
     CALL IS_CLICK_INSIDE_RECTANGLE
-    JE CLEAN_DRAWING_AREA
+    JNE CHECK_RECT_15
+    JMP CLEAN_DRAWING_AREA 
 
+    CHECK_RECT_15:
+    SET_LINE_POINTS 185, 390, 460, 420
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_16
+    JMP TXT_INPUT_MODE
+
+    CHECK_RECT_16:
+    SET_LINE_POINTS 25, 390, 164, 425
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JE SAVE_DRAWING
     
     CALL DRAWING_LOOP
 
@@ -1434,6 +1691,15 @@ DRAW_PROCESS:
     MOV [SELECTED_COLOR], AL
     CALL DRAWING_LOOP
     JMP MAIN_LOOP           ; Continuar verificando clics
+
+SAVE_DRAWING:
+    CALL SAVE_SKETCH
+    CALL RESET_CAMPO_TXT
+
+TXT_INPUT_MODE:
+    ; CALL RESET_CAMPO_TXT
+    CALL WRITE_CHARACTER
+    JMP MAIN_LOOP
 
 CLEAN_DRAWING_AREA:
     CALL CLEAR_DRAWING_AREA   ; Llamar a la función de limpiar el área de dibujo
