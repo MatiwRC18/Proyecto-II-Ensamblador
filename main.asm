@@ -24,6 +24,8 @@
     txtColores DB 'Colores$'
     txtSketch DB 'Etch A Sketch$'
     txtGruesor DB 'Gruesor$'
+    txtAsterisco DB '*$'
+    
 
     LINE_POINTS dw 0,0,0,0 
     ; Colores correspondientes a cada rectángulo
@@ -44,7 +46,7 @@
     DRAW_Y2 DW 304    ; Limite inferior del área de dibujo
 
     ; Definir el área de texto y límites
-    TXT_COLUMN_START EQU 36      ; Columna inicial (aproximado desde 190px)
+    TXT_COLUMN_START EQU 36     ; Columna inicial (aproximado desde 190px)
     TXT_ROW_START    EQU 25      ; Fila inicial (aproximado desde 395px)
     MAX_COLUMNS      EQU 57      ; Máximo número de columnas en la línea
 
@@ -281,7 +283,7 @@ DRAW_ARROW_DOWN ENDP
 
 DRAW_ARROW_RIGHT PROC
     MOV BH, 00H    ; Página 0
-    MOV AL, 0FH    ; Color VERDE
+    MOV AL, 0FH    
     ; Dibujar la línea VERTICAL DEL TRIANGULO 
     MOV CX, 577
     MOV DX, 450
@@ -533,6 +535,25 @@ PRINT_TXT_GRUESOR:
 END_PRINT_TXT_GRUESOR:
     RET
 TEXT_GRUESOR ENDP
+
+TEXT_ASTERISCO PROC
+    ; Escribe en pantalla texto del botón de guardar
+    CLD
+    MOV SI, OFFSET txtAsterisco
+    TEXT_POSITION 25,56
+PRINT_TXT_ASTERISCO:
+    LODSB              ; Cargar el siguiente byte del mensaje en AL
+    CMP AL, '$'
+    JE END_PRINT_TXT_ASTERISCO
+    MOV AH, 0EH
+    MOV BH, 00H
+    MOV BL, 04H        ; Atributo del carácter (0Fh es blanco sobre negro)
+    INT 10H
+    JMP PRINT_TXT_ASTERISCO
+
+END_PRINT_TXT_ASTERISCO:
+    RET
+TEXT_ASTERISCO ENDP
 
 CIRCLE PROC
     
@@ -1553,7 +1574,6 @@ CLEAR_BUFFER_LOOP:
 RESET_FILENAME_BUFFER ENDP
 
 
-
 ; ----------------------------------------------------------------
 ; PROGRAMA PRINCIPAL
 ; ----------------------------------------------------------------
@@ -1695,9 +1715,10 @@ DRAW_PROCESS:
 SAVE_DRAWING:
     CALL SAVE_SKETCH
     CALL RESET_CAMPO_TXT
+    JMP MAIN_LOOP
 
 TXT_INPUT_MODE:
-    ; CALL RESET_CAMPO_TXT
+    CALL TEXT_ASTERISCO
     CALL WRITE_CHARACTER
     JMP MAIN_LOOP
 
