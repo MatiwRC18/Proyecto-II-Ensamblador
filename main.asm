@@ -27,6 +27,7 @@
     txtAsterisco DB '*$'
     txtError DB 'Bosquejo no existe$'
     txtGuardado DB 'Bosquejo guardado$'
+    txtCargado DB 'Bosquejo cargado$'
 
     LINE_POINTS dw 0,0,0,0 
     ; Colores correspondientes a cada rectángulo
@@ -595,10 +596,25 @@ END_PRINT_TXT_GUARDADO:
     RET
 TEXT_GUARDADO ENDP
 
-; ----------------------------------------------------
-; DELAY_SECONDS: Espera una cantidad específica de segundos
-; Entrada: AX = número de segundos a esperar
-; ----------------------------------------------------
+TEXT_CARGADO PROC
+    ; Escribe en pantalla texto del botón de guardar
+    CLD
+    MOV SI, OFFSET txtCargado
+    TEXT_POSITION 25,36
+PRINT_TXT_CARGADO:
+    LODSB              ; Cargar el siguiente byte del mensaje en AL
+    CMP AL, '$'
+    JE END_PRINT_TXT_CARGADO
+    MOV AH, 0EH
+    MOV BH, 00H
+    MOV BL, 02H        ; Atributo del carácter (0Fh es blanco sobre negro)
+    INT 10H
+    JMP PRINT_TXT_CARGADO
+
+END_PRINT_TXT_CARGADO:
+    RET
+TEXT_CARGADO ENDP
+
 DELAY_SECONDS PROC
     ; Guardar el número de segundos en CX para el bucle externo
     MOV CX, AX
@@ -616,7 +632,6 @@ DELAY_LOOP:
 
     RET
 DELAY_SECONDS ENDP
-
 
 CIRCLE PROC
     
@@ -1700,6 +1715,9 @@ DONE_LOADING:
     MOV AH, 3Eh              ; Función para cerrar archivo
     MOV BX, BX               ; Handle del archivo
     INT 21h
+    CALL TEXT_CARGADO
+    MOV AX, 35            ; Esperar 2 segundos
+    CALL DELAY_SECONDS
     RET
 
 FILE_ERROR_LOAD:
