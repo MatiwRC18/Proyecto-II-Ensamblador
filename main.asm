@@ -25,7 +25,8 @@
     txtSketch DB 'Etch A Sketch$'
     txtGruesor DB 'Gruesor$'
     txtAsterisco DB '*$'
-    
+    txtError DB 'Bosquejo no existe$'
+    txtGuardado DB 'Bosquejo guardado$'
 
     LINE_POINTS dw 0,0,0,0 
     ; Colores correspondientes a cada rectángulo
@@ -548,13 +549,74 @@ PRINT_TXT_ASTERISCO:
     JE END_PRINT_TXT_ASTERISCO
     MOV AH, 0EH
     MOV BH, 00H
-    MOV BL, 04H        ; Atributo del carácter (0Fh es blanco sobre negro)
+    MOV BL, 09H        ; Atributo del carácter (0Fh es blanco sobre negro)
     INT 10H
     JMP PRINT_TXT_ASTERISCO
 
 END_PRINT_TXT_ASTERISCO:
     RET
 TEXT_ASTERISCO ENDP
+
+TEXT_ERROR PROC
+    ; Escribe en pantalla texto del botón de guardar
+    CLD
+    MOV SI, OFFSET txtError
+    TEXT_POSITION 25,36
+PRINT_TXT_ERROR:
+    LODSB              ; Cargar el siguiente byte del mensaje en AL
+    CMP AL, '$'
+    JE END_PRINT_TXT_ERROR
+    MOV AH, 0EH
+    MOV BH, 00H
+    MOV BL, 04H        ; Atributo del carácter (0Fh es blanco sobre negro)
+    INT 10H
+    JMP PRINT_TXT_ERROR
+
+END_PRINT_TXT_ERROR:
+    RET
+TEXT_ERROR ENDP
+
+TEXT_GUARDADO PROC
+    ; Escribe en pantalla texto del botón de guardar
+    CLD
+    MOV SI, OFFSET txtGuardado
+    TEXT_POSITION 25,36
+PRINT_TXT_GUARDADO:
+    LODSB              ; Cargar el siguiente byte del mensaje en AL
+    CMP AL, '$'
+    JE END_PRINT_TXT_GUARDADO
+    MOV AH, 0EH
+    MOV BH, 00H
+    MOV BL, 02H        ; Atributo del carácter (0Fh es blanco sobre negro)
+    INT 10H
+    JMP PRINT_TXT_GUARDADO
+
+END_PRINT_TXT_GUARDADO:
+    RET
+TEXT_GUARDADO ENDP
+
+; ----------------------------------------------------
+; DELAY_SECONDS: Espera una cantidad específica de segundos
+; Entrada: AX = número de segundos a esperar
+; ----------------------------------------------------
+DELAY_SECONDS PROC
+    ; Guardar el número de segundos en CX para el bucle externo
+    MOV CX, AX
+
+NEXT_SECOND:
+    ; Bucle interno para consumir tiempo (aproximadamente 1 segundo en DOSBox)
+    MOV DX, 0FFFFh   ; Establecer el valor inicial del bucle interno
+
+DELAY_LOOP:
+    DEC DX           ; Decrementar DX
+    JNZ DELAY_LOOP   ; Continuar hasta que DX llegue a 0
+
+    ; Decrementar CX (segundos restantes)
+    LOOP NEXT_SECOND ; Repetir hasta que CX llegue a 0
+
+    RET
+DELAY_SECONDS ENDP
+
 
 CIRCLE PROC
     
@@ -1517,6 +1579,9 @@ COLUMN_LOOP:
 
     ; Limpiar el campo de texto para permitir escribir un nuevo nombre
     CALL RESET_FILENAME_BUFFER
+    CALL TEXT_GUARDADO
+    MOV AX, 35            ; Esperar 2 segundos
+    CALL DELAY_SECONDS
 
     RET
 FILE_ERROR:
@@ -1578,7 +1643,7 @@ LOAD_SKETCH PROC
     ; Preparar el nombre del archivo con ".txt"
     MOV SI, FILENAME_INDEX
     ADD SI, OFFSET FILENAME_BUFFER
-    MOV BYTE PTR [SI], '.'
+    MOV BYTE PTR [SI], '.'      ; Agregar '.txt'
     MOV BYTE PTR [SI+1], 't'
     MOV BYTE PTR [SI+2], 'x'
     MOV BYTE PTR [SI+3], 't'
@@ -1613,6 +1678,7 @@ COLUMN_LOOP_LOAD:
 
     ; Dibujar el píxel con el color correspondiente
     MOV AH, 0Ch              ; Función para dibujar píxel
+    MOV AL,AL
     MOV BH, 0                ; Página 0
     MOV CX, CX               ; Columna
     MOV DX, DX               ; Fila
@@ -1634,11 +1700,13 @@ DONE_LOADING:
     MOV AH, 3Eh              ; Función para cerrar archivo
     MOV BX, BX               ; Handle del archivo
     INT 21h
-    CALL RESET_FILENAME_BUFFER
     RET
 
 FILE_ERROR_LOAD:
     ; Manejo de errores (archivo no encontrado)
+    CALL TEXT_ERROR
+    MOV AX, 35            ; Esperar 2 segundos
+    CALL DELAY_SECONDS
     RET
 LOAD_SKETCH ENDP
 
@@ -1649,17 +1717,38 @@ READ_BYTE PROC
     LEA DX, BYTE_BUFFER      ; Buffer temporal
     MOV CX, 1                ; Leer un byte
     INT 21h
-    MOV AL, BYTE PTR [BYTE_BUFFER] ; Almacenar byte en AL
+    MOV AL, BYTE_BUFFER      ; Almacenar byte en AL
     RET
 READ_BYTE ENDP
 
 ASCII_TO_COLOR PROC
-    ; Convertir carácter ASCII a su valor de color
-    SUB AL, '0'              ; Ajustar valor base para 0-9
-    CMP AL, 9
-    JLE RETURN_COLOR         ; Si está entre 0-9, devolver
+    ; Convertir carácter ASCII en AL a su valor de color (0-15)
+    CMP AL, '0'
+    JL INVALID_COLOR         ; Si AL < '0', es un carácter inválido
 
-    ADD AL, 7                ; Ajustar para A-F
+    CMP AL, '9'
+    JLE DIGIT_COLOR_CON          ; Si AL está entre '0' y '9', convertir directamente
+
+    CMP AL, 'A'
+    JL INVALID_COLOR         ; Si AL < 'A', no es un carácter válido
+
+    CMP AL, 'F'
+    JG INVALID_COLOR         ; Si AL > 'F', es inválido
+
+    ; Convertir letras A-F a valores 10-15
+    SUB AL, 'A'              ; Ajustar para que 'A' = 0
+    ADD AL, 10               ; Luego ajustar para que 'A' = 10
+    JMP RETURN_COLOR         ; Saltar a devolver el valor
+
+DIGIT_COLOR_CON:
+    ; Convertir dígitos '0'-'9' a sus valores numéricos
+    SUB AL, '0'
+    JMP RETURN_COLOR         ; Saltar a devolver el valor
+
+INVALID_COLOR:
+    ; Manejo de caracteres inválidos (asignar un color por defecto, por ejemplo 0)
+    MOV AL, 0                ; Color por defecto (negro o transparente)
+
 RETURN_COLOR:
     RET
 ASCII_TO_COLOR ENDP
