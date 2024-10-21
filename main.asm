@@ -63,6 +63,7 @@
     DRAW_Y_START EQU 76    ; Coordenada Y inicial del área de dibujo
     DRAW_Y_END   EQU 304   ; Coordenada Y final del área de dibujo
 
+
 .CODE
 
 INIT_SCREEN PROC
@@ -1573,8 +1574,98 @@ CLEAR_BUFFER_LOOP:
     RET
 RESET_FILENAME_BUFFER ENDP
 
+LOAD_SKETCH PROC
+    ; Preparar el nombre del archivo con ".txt"
+    MOV SI, FILENAME_INDEX
+    ADD SI, OFFSET FILENAME_BUFFER
+    MOV BYTE PTR [SI], '.'
+    MOV BYTE PTR [SI+1], 't'
+    MOV BYTE PTR [SI+2], 'x'
+    MOV BYTE PTR [SI+3], 't'
+    ADD FILENAME_INDEX, 4
 
-; ----------------------------------------------------------------
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, FILENAME_BUFFER  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_LOAD       ; Saltar si hay error
+
+    MOV BX, AX               ; Guardar el handle del archivo
+
+    ; Inicializar coordenadas para el área de dibujo
+    MOV DX, DRAW_Y_START     ; Y inicial (fila)
+
+ROW_LOOP_LOAD:
+    MOV CX, DRAW_X_START     ; X inicial (columna)
+
+COLUMN_LOOP_LOAD:
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+    CMP AL, '@'              ; Verificar si es el fin de la fila
+    JE NEXT_ROW
+
+    CMP AL, '%'              ; Verificar si es el fin del archivo
+    JE DONE_LOADING
+
+    ; Convertir el carácter a su valor hexadecimal correspondiente
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch              ; Función para dibujar píxel
+    MOV BH, 0                ; Página 0
+    MOV CX, CX               ; Columna
+    MOV DX, DX               ; Fila
+    INT 10h                  ; Dibujar el píxel
+
+    ; Avanzar a la siguiente columna
+    INC CX
+    CMP CX, DRAW_X_END
+    JL COLUMN_LOOP_LOAD
+
+NEXT_ROW:
+    ; Avanzar a la siguiente fila
+    INC DX
+    CMP DX, DRAW_Y_END
+    JL ROW_LOOP_LOAD
+
+DONE_LOADING:
+    ; Cerrar el archivo
+    MOV AH, 3Eh              ; Función para cerrar archivo
+    MOV BX, BX               ; Handle del archivo
+    INT 21h
+    CALL RESET_FILENAME_BUFFER
+    RET
+
+FILE_ERROR_LOAD:
+    ; Manejo de errores (archivo no encontrado)
+    RET
+LOAD_SKETCH ENDP
+
+; Leer un byte del archivo
+READ_BYTE PROC
+    MOV AH, 3Fh              ; Función para leer archivo
+    MOV BX, BX               ; Handle del archivo
+    LEA DX, BYTE_BUFFER      ; Buffer temporal
+    MOV CX, 1                ; Leer un byte
+    INT 21h
+    MOV AL, BYTE PTR [BYTE_BUFFER] ; Almacenar byte en AL
+    RET
+READ_BYTE ENDP
+
+ASCII_TO_COLOR PROC
+    ; Convertir carácter ASCII a su valor de color
+    SUB AL, '0'              ; Ajustar valor base para 0-9
+    CMP AL, 9
+    JLE RETURN_COLOR         ; Si está entre 0-9, devolver
+
+    ADD AL, 7                ; Ajustar para A-F
+RETURN_COLOR:
+    RET
+ASCII_TO_COLOR ENDP
+
+
+;---------------------------------------------------------
 ; PROGRAMA PRINCIPAL
 ; ----------------------------------------------------------------
 MAIN PROC
@@ -1702,7 +1793,13 @@ MAIN_LOOP:
     CHECK_RECT_16:
     SET_LINE_POINTS 25, 390, 164, 425
     CALL IS_CLICK_INSIDE_RECTANGLE
-    JE SAVE_DRAWING
+    JNE CHECK_RECT_17
+    JMP SAVE_DRAWING
+
+    CHECK_RECT_17:
+    SET_LINE_POINTS 25, 435, 157, 470
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JE LOAD_DRAWING
     
     CALL DRAWING_LOOP
 
@@ -1711,6 +1808,12 @@ DRAW_PROCESS:
     MOV [SELECTED_COLOR], AL
     CALL DRAWING_LOOP
     JMP MAIN_LOOP           ; Continuar verificando clics
+
+LOAD_DRAWING:
+    CALL LOAD_SKETCH
+    CALL RESET_FILENAME_BUFFER
+    CALL RESET_CAMPO_TXT
+    JMP MAIN_LOOP
 
 SAVE_DRAWING:
     CALL SAVE_SKETCH
