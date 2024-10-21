@@ -61,7 +61,7 @@
     CURSOR_COL  DB TXT_COLUMN_START ; Inicializar la columna del cursor
 
     DRAW_X_START EQU 36    ; Coordenada X inicial del área de dibujo
-    DRAW_X_END   EQU 449   ; Coordenada X final del área de dibujo
+    DRAW_X_END   EQU 450   ; Coordenada X final del área de dibujo
     DRAW_Y_START EQU 76    ; Coordenada Y inicial del área de dibujo
     DRAW_Y_END   EQU 304   ; Coordenada Y final del área de dibujo
 
@@ -245,120 +245,6 @@ DRAW_SLASH_RIGHT_UP:
 
     RET
 DRAW_ARROW_UP ENDP
-
-DRAW_ARROW_DOWN PROC
-    MOV BH, 00H    ; Página 0
-    MOV AL, 0FH    ; Color VERDE
-    ; Dibujar la línea HORIZONTAL DEL TRIANGULO 
-    MOV CX, 537
-    MOV DX, 435
-DRAW_HORIZONTAL_LINE_DOWN:
-    MOV AH, 0CH
-    INT 10H
-    INC CX
-    CMP CX, 557
-    JNE DRAW_HORIZONTAL_LINE_DOWN
-
-    ; Dibujar SLASH DEL TRIANGULO (\)
-    MOV CX, 547
-    MOV DX, 445
-DRAW_SLASH_LEFT_DOWN:
-    MOV AH, 0CH
-    INT 10H
-    DEC CX
-    DEC DX
-    CMP CX, 537
-    JNE DRAW_SLASH_LEFT_DOWN
-
-    ; Dibujar SLASH DEL TRIANGULO (/)
-    MOV CX, 547
-    MOV DX, 445
-DRAW_SLASH_RIGHT_DOWN:
-    MOV AH, 0CH
-    INT 10H
-    INC CX
-    DEC DX
-    CMP CX, 557
-    JNE DRAW_SLASH_RIGHT_DOWN
-
-    RET
-DRAW_ARROW_DOWN ENDP
-
-DRAW_ARROW_RIGHT PROC
-    MOV BH, 00H    ; Página 0
-    MOV AL, 0FH    
-    ; Dibujar la línea VERTICAL DEL TRIANGULO 
-    MOV CX, 577
-    MOV DX, 450
-DRAW_VERTICAL_LINE_RIGHT:
-    MOV AH, 0CH
-    INT 10H
-    DEC DX
-    CMP DX, 430
-    JNE DRAW_VERTICAL_LINE_RIGHT
-
-    ; Dibujar SLASH DEL TRIANGULO (\)
-    MOV CX, 587
-    MOV DX, 440
-DRAW_SLASH_LEFT_RIGHT:
-    MOV AH, 0CH
-    INT 10H
-    DEC CX
-    DEC DX
-    CMP CX, 577
-    JNE DRAW_SLASH_LEFT_RIGHT
-
-    ; Dibujar SLASH DEL TRIANGULO (/)
-    MOV CX, 577
-    MOV DX, 450
-DRAW_SLASH_RIGHT_RIGHT:
-    MOV AH, 0CH
-    INT 10H
-    INC CX
-    DEC DX
-    CMP CX, 587
-    JNE DRAW_SLASH_RIGHT_RIGHT
-
-    RET
-DRAW_ARROW_RIGHT ENDP
-
-DRAW_ARROW_LEFT PROC
-    MOV BH, 00H    ; Página 0
-    MOV AL, 0FH    ; Color VERDE
-    ; Dibujar la línea VERTICAL DEL TRIANGULO 
-    MOV CX, 517
-    MOV DX, 450
-DRAW_VERTICAL_LINE_LEFT:
-    MOV AH, 0CH
-    INT 10H
-    DEC DX
-    CMP DX, 430
-    JNE DRAW_VERTICAL_LINE_LEFT
-
-    ; Dibujar SLASH DEL TRIANGULO (\)
-    MOV CX, 517
-    MOV DX, 450
-DRAW_SLASH_LEFT_LEFT:
-    MOV AH, 0CH
-    INT 10H
-    DEC CX
-    DEC DX
-    CMP CX, 507
-    JNE DRAW_SLASH_LEFT_LEFT
-
-    ; Dibujar SLASH DEL TRIANGULO (/)
-    MOV CX, 507
-    MOV DX, 440
-DRAW_SLASH_RIGHT_LEFT:
-    MOV AH, 0CH
-    INT 10H
-    INC CX
-    DEC DX
-    CMP CX, 517
-    JNE DRAW_SLASH_RIGHT_LEFT
-
-    RET
-DRAW_ARROW_LEFT ENDP
 
 TEXT_POSITION MACRO fila, columna
     MOV AH, 02H          ; Función 02h - Mover el cursor
@@ -1455,7 +1341,7 @@ WRITE_LOOP:
     ; Imprimir el carácter en la pantalla usando BIOS
     MOV AH, 0Eh          ; Función para imprimir en modo texto
     MOV BH, 0            ; Página 0
-    MOV BL, 0EH            ; Color blanco
+    MOV BL, 0EH            ; Color AMARILLO
     INT 10h              ; Llamada a la BIOS para imprimir el carácter
 
     ; Incrementar el índice y la columna del cursor
@@ -1560,7 +1446,7 @@ COLUMN_LOOP:
 
     ; Avanzar a la siguiente columna (X)
     INC CX
-    CMP CX, DRAW_X_END       ; Verificar si llegamos al final de la fila
+    CMP CX, DRAW_X2       ; Verificar si llegamos al final de la fila
     JL COLUMN_LOOP
 
     ; Escribir '@' para indicar fin de la fila
@@ -1579,7 +1465,7 @@ COLUMN_LOOP:
 
     ; Avanzar a la siguiente fila (Y)
     INC DX
-    CMP DX, DRAW_Y_END       ; Verificar si llegamos al final del área de dibujo
+    CMP DX, DRAW_Y2       ; Verificar si llegamos al final del área de dibujo
     JL ROW_LOOP
 
     ; Escribir '%' para indicar fin del archivo
@@ -1593,8 +1479,12 @@ COLUMN_LOOP:
     INT 21h
 
     ; Limpiar el campo de texto para permitir escribir un nuevo nombre
-    CALL RESET_FILENAME_BUFFER
+
+    
     CALL TEXT_GUARDADO
+    CALL RESET_NOMBRE
+    CALL DISPLAY_FILENAME
+    CALL RESET_FILENAME_BUFFER
     MOV AX, 35            ; Esperar 2 segundos
     CALL DELAY_SECONDS
 
@@ -1676,39 +1566,51 @@ LOAD_SKETCH PROC
     ; Inicializar coordenadas para el área de dibujo
     MOV DX, DRAW_Y_START     ; Y inicial (fila)
 
-ROW_LOOP_LOAD:
+
     MOV CX, DRAW_X_START     ; X inicial (columna)
 
 COLUMN_LOOP_LOAD:
     ; Leer un byte del archivo (color)
     CALL READ_BYTE
-    CMP AL, '@'              ; Verificar si es el fin de la fila
-    JE NEXT_ROW
+
+    CMP AL,'F'
+    JE NEXT_COLUMN
 
     CMP AL, '%'              ; Verificar si es el fin del archivo
     JE DONE_LOADING
 
+    CMP AL, '@'              ; Verificar si es el fin de la fila
+    JE NEXT_ROW
+    
+    CMP AL, 0Dh   ; Retorno de carro (CR)
+    JE COLUMN_LOOP_LOAD
+    CMP AL, 0Ah   ; Nueva línea (LF)
+    JE COLUMN_LOOP_LOAD
+
+DRAW_COLOR:
     ; Convertir el carácter a su valor hexadecimal correspondiente
     CALL ASCII_TO_COLOR
-
+    
     ; Dibujar el píxel con el color correspondiente
     MOV AH, 0Ch              ; Función para dibujar píxel
-    MOV AL,AL
+    MOV AL, AL
     MOV BH, 0                ; Página 0
     MOV CX, CX               ; Columna
     MOV DX, DX               ; Fila
     INT 10h                  ; Dibujar el píxel
 
+
+NEXT_COLUMN:
     ; Avanzar a la siguiente columna
     INC CX
     CMP CX, DRAW_X_END
     JL COLUMN_LOOP_LOAD
 
 NEXT_ROW:
-    ; Avanzar a la siguiente fila
+    MOV CX, DRAW_X_START
     INC DX
-    CMP DX, DRAW_Y_END
-    JL ROW_LOOP_LOAD
+    JMP COLUMN_LOOP_LOAD      ; Continuar si no es el final
+
 
 DONE_LOADING:
     ; Cerrar el archivo
@@ -1718,6 +1620,8 @@ DONE_LOADING:
     CALL TEXT_CARGADO
     MOV AX, 35            ; Esperar 2 segundos
     CALL DELAY_SECONDS
+    CALL RESET_NOMBRE
+    CALL DISPLAY_FILENAME
     RET
 
 FILE_ERROR_LOAD:
@@ -1728,18 +1632,23 @@ FILE_ERROR_LOAD:
     RET
 LOAD_SKETCH ENDP
 
-; Leer un byte del archivo
 READ_BYTE PROC
+    PUSH CX
+    PUSH DX
     MOV AH, 3Fh              ; Función para leer archivo
     MOV BX, BX               ; Handle del archivo
     LEA DX, BYTE_BUFFER      ; Buffer temporal
     MOV CX, 1                ; Leer un byte
     INT 21h
     MOV AL, BYTE_BUFFER      ; Almacenar byte en AL
+    POP DX
+    POP CX
     RET
 READ_BYTE ENDP
 
 ASCII_TO_COLOR PROC
+    PUSH CX
+    PUSH DX
     ; Convertir carácter ASCII en AL a su valor de color (0-15)
     CMP AL, '0'
     JL INVALID_COLOR         ; Si AL < '0', es un carácter inválido
@@ -1765,12 +1674,62 @@ DIGIT_COLOR_CON:
 
 INVALID_COLOR:
     ; Manejo de caracteres inválidos (asignar un color por defecto, por ejemplo 0)
-    MOV AL, 0                ; Color por defecto (negro o transparente)
+    MOV AL, 15                ; Color por defecto (negro o transparente)
 
 RETURN_COLOR:
+    POP DX
+    POP CX
     RET
 ASCII_TO_COLOR ENDP
 
+DISPLAY_FILENAME PROC
+    
+    ; Inicializar el puntero al buffer del nombre del archivo
+    LEA SI, FILENAME_BUFFER
+
+    ; Posicionar el cursor en el área del rectángulo "Dibujo sin nombre"
+    MOV CURSOR_ROW, 2      ; Fila donde comienza el texto (ajustar según diseño)
+    MOV CURSOR_COL, 16     ; Columna donde empieza (ajustar según diseño)
+
+DISPLAY_CHAR_LOOP:
+    ; Cargar el siguiente carácter del buffer
+    LODSB                  ; Cargar el byte de [SI] en AL
+    CMP AL, 0              ; Verificar si es el final del nombre (byte nulo)
+    JE DONE_DISPLAY        ; Si es nulo, terminamos
+
+    ; Posicionar el cursor en pantalla
+    MOV AH, 02h            ; Función para mover cursor
+    MOV BH, 0              ; Página 0
+    MOV DH, CURSOR_ROW     ; Fila actual
+    MOV DL, CURSOR_COL     ; Columna actual
+    INT 10h                ; Llamar a la BIOS para mover el cursor
+
+    ; Imprimir el carácter en la pantalla con un color específico
+    MOV AH, 0Eh            ; Función para imprimir en modo texto
+    MOV BL, 0Eh            ; Atributo de color (amarillo)
+    INT 10h                ; Llamar a la BIOS para imprimir el carácter
+
+    ; Avanzar a la siguiente columna
+    INC CURSOR_COL
+    CMP CURSOR_COL, 40     ; Limitar la longitud del nombre en pantalla
+    JGE DONE_DISPLAY       ; Si excede, terminamos
+
+    JMP DISPLAY_CHAR_LOOP  ; Repetir para el siguiente carácter
+
+DONE_DISPLAY:
+    RET
+DISPLAY_FILENAME ENDP
+
+
+RESET_NOMBRE PROC
+    MOV WORD PTR [X1], 25   ; Columna inicial (X1) para el primer botón
+    MOV WORD PTR [Y1], 25   ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 350  ; Columna final (X2)
+    MOV WORD PTR [Y2], 50   ; Fila final (Y2)
+    MOV AL, 00H
+    CALL FILL_RECTANGLE
+    RET
+RESET_NOMBRE ENDP
 
 ;---------------------------------------------------------
 ; PROGRAMA PRINCIPAL
@@ -1934,6 +1893,8 @@ TXT_INPUT_MODE:
 
 CLEAN_DRAWING_AREA:
     CALL CLEAR_DRAWING_AREA   ; Llamar a la función de limpiar el área de dibujo
+    CALL RESET_NOMBRE
+    CALL TEXT_DIBUJO
     JMP MAIN_LOOP             ; Volver al bucle principal
 
 THICKNESS_1:
