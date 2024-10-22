@@ -28,6 +28,8 @@
     txtError DB 'Bosquejo no existe$'
     txtGuardado DB 'Bosquejo guardado$'
     txtCargado DB 'Bosquejo cargado$'
+    txtPicError DB 'Imagen no existe$'
+    txtPic DB 'Imagen cargada$'
 
     LINE_POINTS dw 0,0,0,0 
     ; Colores correspondientes a cada rectángulo
@@ -65,7 +67,8 @@
     DRAW_Y_START EQU 76    ; Coordenada Y inicial del área de dibujo
     DRAW_Y_END   EQU 304   ; Coordenada Y final del área de dibujo
 
-
+    TEMP_X DW 0      ; Variable para almacenar la coordenada X del clic
+    TEMP_Y DW 0      ; Variable para almacenar la coordenada Y del clic
 .CODE
 
 INIT_SCREEN PROC
@@ -245,6 +248,120 @@ DRAW_SLASH_RIGHT_UP:
 
     RET
 DRAW_ARROW_UP ENDP
+
+DRAW_ARROW_DOWN PROC
+    MOV BH, 00H    ; Página 0
+    MOV AL, 0FH    ; Color VERDE
+    ; Dibujar la línea HORIZONTAL DEL TRIANGULO 
+    MOV CX, 537
+    MOV DX, 435
+DRAW_HORIZONTAL_LINE_DOWN:
+    MOV AH, 0CH
+    INT 10H
+    INC CX
+    CMP CX, 557
+    JNE DRAW_HORIZONTAL_LINE_DOWN
+
+    ; Dibujar SLASH DEL TRIANGULO (\)
+    MOV CX, 547
+    MOV DX, 445
+DRAW_SLASH_LEFT_DOWN:
+    MOV AH, 0CH
+    INT 10H
+    DEC CX
+    DEC DX
+    CMP CX, 537
+    JNE DRAW_SLASH_LEFT_DOWN
+
+    ; Dibujar SLASH DEL TRIANGULO (/)
+    MOV CX, 547
+    MOV DX, 445
+DRAW_SLASH_RIGHT_DOWN:
+    MOV AH, 0CH
+    INT 10H
+    INC CX
+    DEC DX
+    CMP CX, 557
+    JNE DRAW_SLASH_RIGHT_DOWN
+
+    RET
+DRAW_ARROW_DOWN ENDP
+
+DRAW_ARROW_RIGHT PROC
+    MOV BH, 00H    ; Página 0
+    MOV AL, 0FH    
+    ; Dibujar la línea VERTICAL DEL TRIANGULO 
+    MOV CX, 577
+    MOV DX, 450
+DRAW_VERTICAL_LINE_RIGHT:
+    MOV AH, 0CH
+    INT 10H
+    DEC DX
+    CMP DX, 430
+    JNE DRAW_VERTICAL_LINE_RIGHT
+
+    ; Dibujar SLASH DEL TRIANGULO (\)
+    MOV CX, 587
+    MOV DX, 440
+DRAW_SLASH_LEFT_RIGHT:
+    MOV AH, 0CH
+    INT 10H
+    DEC CX
+    DEC DX
+    CMP CX, 577
+    JNE DRAW_SLASH_LEFT_RIGHT
+
+    ; Dibujar SLASH DEL TRIANGULO (/)
+    MOV CX, 577
+    MOV DX, 450
+DRAW_SLASH_RIGHT_RIGHT:
+    MOV AH, 0CH
+    INT 10H
+    INC CX
+    DEC DX
+    CMP CX, 587
+    JNE DRAW_SLASH_RIGHT_RIGHT
+
+    RET
+DRAW_ARROW_RIGHT ENDP
+
+DRAW_ARROW_LEFT PROC
+    MOV BH, 00H    ; Página 0
+    MOV AL, 0FH    ; Color VERDE
+    ; Dibujar la línea VERTICAL DEL TRIANGULO 
+    MOV CX, 517
+    MOV DX, 450
+DRAW_VERTICAL_LINE_LEFT:
+    MOV AH, 0CH
+    INT 10H
+    DEC DX
+    CMP DX, 430
+    JNE DRAW_VERTICAL_LINE_LEFT
+
+    ; Dibujar SLASH DEL TRIANGULO (\)
+    MOV CX, 517
+    MOV DX, 450
+DRAW_SLASH_LEFT_LEFT:
+    MOV AH, 0CH
+    INT 10H
+    DEC CX
+    DEC DX
+    CMP CX, 507
+    JNE DRAW_SLASH_LEFT_LEFT
+
+    ; Dibujar SLASH DEL TRIANGULO (/)
+    MOV CX, 507
+    MOV DX, 440
+DRAW_SLASH_RIGHT_LEFT:
+    MOV AH, 0CH
+    INT 10H
+    INC CX
+    DEC DX
+    CMP CX, 517
+    JNE DRAW_SLASH_RIGHT_LEFT
+
+    RET
+DRAW_ARROW_LEFT ENDP
 
 TEXT_POSITION MACRO fila, columna
     MOV AH, 02H          ; Función 02h - Mover el cursor
@@ -463,6 +580,25 @@ END_PRINT_TXT_ERROR:
     RET
 TEXT_ERROR ENDP
 
+TEXT_ERROR_PIC PROC
+    ; Escribe en pantalla texto del botón de guardar
+    CLD
+    MOV SI, OFFSET txtPicError
+    TEXT_POSITION 25,36
+PRINT_TXT_ERROR_PIC:
+    LODSB              ; Cargar el siguiente byte del mensaje en AL
+    CMP AL, '$'
+    JE END_PRINT_TXT_ERROR_PIC
+    MOV AH, 0EH
+    MOV BH, 00H
+    MOV BL, 04H        ; Atributo del carácter (0Fh es blanco sobre negro)
+    INT 10H
+    JMP PRINT_TXT_ERROR_PIC
+
+END_PRINT_TXT_ERROR_PIC:
+    RET
+TEXT_ERROR_PIC ENDP
+
 TEXT_GUARDADO PROC
     ; Escribe en pantalla texto del botón de guardar
     CLD
@@ -481,6 +617,25 @@ PRINT_TXT_GUARDADO:
 END_PRINT_TXT_GUARDADO:
     RET
 TEXT_GUARDADO ENDP
+
+TEXT_PIC PROC
+    ; Escribe en pantalla texto del botón de guardar
+    CLD
+    MOV SI, OFFSET txtPic
+    TEXT_POSITION 25,36
+PRINT_TXT_PIC:
+    LODSB              ; Cargar el siguiente byte del mensaje en AL
+    CMP AL, '$'
+    JE END_PRINT_TXT_PIC
+    MOV AH, 0EH
+    MOV BH, 00H
+    MOV BL, 02H        ; Atributo del carácter (0Fh es blanco sobre negro)
+    INT 10H
+    JMP PRINT_TXT_PIC
+
+END_PRINT_TXT_PIC:
+    RET
+TEXT_PIC ENDP
 
 TEXT_CARGADO PROC
     ; Escribe en pantalla texto del botón de guardar
@@ -1720,7 +1875,6 @@ DONE_DISPLAY:
     RET
 DISPLAY_FILENAME ENDP
 
-
 RESET_NOMBRE PROC
     MOV WORD PTR [X1], 25   ; Columna inicial (X1) para el primer botón
     MOV WORD PTR [Y1], 25   ; Fila inicial (Y1)
@@ -1730,6 +1884,103 @@ RESET_NOMBRE PROC
     CALL FILL_RECTANGLE
     RET
 RESET_NOMBRE ENDP
+
+LOAD_IMAGE PROC
+    ; Preparar el nombre del archivo con ".txt"
+    MOV SI, FILENAME_INDEX
+    ADD SI, OFFSET FILENAME_BUFFER
+    MOV BYTE PTR [SI], '.'      ; Agregar '.txt'
+    MOV BYTE PTR [SI+1], 't'
+    MOV BYTE PTR [SI+2], 'x'
+    MOV BYTE PTR [SI+3], 't'
+    ADD FILENAME_INDEX, 4
+
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, FILENAME_BUFFER  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_LOAD_PIC       ; Saltar si hay error
+
+    MOV BX, AX               ; Guardar el handle del archivo
+    
+;  PIC: 
+;     CALL MOUSE_GET_POSITION
+;     CMP [BUTTONS], 1
+;     JNE PIC  ; Si no se presionó el botón izquierdo, repetir bucle
+
+;     SET_LINE_POINTS 36, 76, 449, 304
+;     CALL IS_CLICK_INSIDE_RECTANGLE
+;     JNE PIC
+
+;     ; Almacenar las coordenadas del clic en las variables temporales
+;     MOV CX, [X_POS]
+;     MOV DX, [Y_POS]
+    
+    MOV CX, 200
+    MOV DX, 200
+
+COLUMN_LOOP_LOAD_PIC:
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL,'F'
+    JE NEXT_COLUMN_PIC
+
+    CMP AL, '%'              ; Verificar si es el fin del archivo
+    JE DONE_LOADING_PIC
+
+    CMP AL, '@'              ; Verificar si es el fin de la fila
+    JE NEXT_ROW_PIC
+    
+    CMP AL, 0Dh   ; Retorno de carro (CR)
+    JE COLUMN_LOOP_LOAD_PIC
+    CMP AL, 0Ah   ; Nueva línea (LF)
+    JE COLUMN_LOOP_LOAD_PIC
+
+DRAW_COLOR_PIC:
+    ; Convertir el carácter a su valor hexadecimal correspondiente
+    CALL ASCII_TO_COLOR
+    
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch              ; Función para dibujar píxel
+    MOV AL, AL
+    MOV BH, 0                ; Página 0
+    MOV CX, CX               ; Columna
+    MOV DX, DX               ; Fila
+    INT 10h                  ; Dibujar el píxel
+
+NEXT_COLUMN_PIC:
+    ; Avanzar a la siguiente columna
+    INC CX
+    CMP CX, DRAW_X_END
+    JL COLUMN_LOOP_LOAD_PIC
+
+NEXT_ROW_PIC:
+    MOV CX, 200  
+    INC DX
+    JMP COLUMN_LOOP_LOAD_PIC     ; Continuar si no es el final
+
+
+DONE_LOADING_PIC:
+    ; Cerrar el archivo
+    MOV AH, 3Eh              ; Función para cerrar archivo
+    MOV BX, BX               ; Handle del archivo
+    INT 21h
+    CALL TEXT_PIC
+    MOV AX, 35            ; Esperar 2 segundos
+    CALL DELAY_SECONDS
+    RET
+
+FILE_ERROR_LOAD_PIC:
+    ; Manejo de errores (archivo no encontrado)
+    CALL TEXT_ERROR_PIC
+    MOV AX, 35            ; Esperar 2 segundos
+    CALL DELAY_SECONDS
+    RET
+
+LOAD_IMAGE ENDP
+
 
 ;---------------------------------------------------------
 ; PROGRAMA PRINCIPAL
@@ -1865,7 +2116,13 @@ MAIN_LOOP:
     CHECK_RECT_17:
     SET_LINE_POINTS 25, 435, 157, 470
     CALL IS_CLICK_INSIDE_RECTANGLE
-    JE LOAD_DRAWING
+    JNE CHECK_RECT_18
+    JMP LOAD_DRAWING
+
+    CHECK_RECT_18:
+    SET_LINE_POINTS 255, 435, 390, 470
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JE LOAD_PIC
     
     CALL DRAWING_LOOP
 
@@ -1874,6 +2131,12 @@ DRAW_PROCESS:
     MOV [SELECTED_COLOR], AL
     CALL DRAWING_LOOP
     JMP MAIN_LOOP           ; Continuar verificando clics
+
+LOAD_PIC:
+    CALL LOAD_IMAGE
+    CALL RESET_FILENAME_BUFFER
+    CALL RESET_CAMPO_TXT
+    JMP MAIN_LOOP
 
 LOAD_DRAWING:
     CALL LOAD_SKETCH
