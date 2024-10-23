@@ -1889,7 +1889,7 @@ LOAD_IMAGE PROC
     ; Preparar el nombre del archivo con ".txt"
     MOV SI, FILENAME_INDEX
     ADD SI, OFFSET FILENAME_BUFFER
-    MOV BYTE PTR [SI], '.'      ; Agregar '.txt'
+    MOV BYTE PTR [SI], '.'
     MOV BYTE PTR [SI+1], 't'
     MOV BYTE PTR [SI+2], 'x'
     MOV BYTE PTR [SI+3], 't'
@@ -1900,86 +1900,89 @@ LOAD_IMAGE PROC
     MOV AL, 0                ; Modo de lectura
     LEA DX, FILENAME_BUFFER  ; Dirección del nombre del archivo
     INT 21h
-    JC FILE_ERROR_LOAD_PIC       ; Saltar si hay error
+    JC FILE_ERROR_LOAD_PIC   ; Saltar si hay error
 
-    MOV BX, AX               ; Guardar el handle del archivo
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+
+WAIT_FOR_CLICK:
+    ; Preservar el handler antes de llamar al mouse
+    PUSH BX                  
+    CALL MOUSE_GET_POSITION  ; Obtener posición del mouse
+    CMP [BUTTONS], 1         ; Verificar si el botón izquierdo está presionado
+    JNE RESTORE_HANDLER      ; Si no, restaurar el handler y seguir esperando
+
+    ; Definir las coordenadas del área de dibujo (36,76) a (449,304)
+    SET_LINE_POINTS 36, 76, 449, 304
+    CALL IS_CLICK_INSIDE_RECTANGLE  ; Verificar si el clic está dentro del área
+    JNE RESTORE_HANDLER             ; Si no está dentro, restaurar handler y seguir esperando
+
+    ; Guardar las coordenadas del clic en CX y DX para iniciar el dibujo
     
-;  PIC: 
-;     CALL MOUSE_GET_POSITION
-;     CMP [BUTTONS], 1
-;     JNE PIC  ; Si no se presionó el botón izquierdo, repetir bucle
+    MOV CX, [X_POS]  ; Usar X_POS como columna inicial
+    MOV DX, [Y_POS]  ; Usar Y_POS como fila inicial
 
-;     SET_LINE_POINTS 36, 76, 449, 304
-;     CALL IS_CLICK_INSIDE_RECTANGLE
-;     JNE PIC
-
-;     ; Almacenar las coordenadas del clic en las variables temporales
-;     MOV CX, [X_POS]
-;     MOV DX, [Y_POS]
-    
-    MOV CX, 200
-    MOV DX, 200
+    ; Restaurar el handler del archivo
+RESTORE_HANDLER:
+    POP BX                  ; Restaurar BX con el handler del archivo
+    JNE WAIT_FOR_CLICK      ; Si no se ha hecho clic válido, repetir
 
 COLUMN_LOOP_LOAD_PIC:
+    
     ; Leer un byte del archivo (color)
     CALL READ_BYTE
 
-    CMP AL,'F'
+    CMP AL, 'F'             ; Saltar a la siguiente columna si es 'F'
     JE NEXT_COLUMN_PIC
 
-    CMP AL, '%'              ; Verificar si es el fin del archivo
+    CMP AL, '%'             ; Verificar si es el fin del archivo
     JE DONE_LOADING_PIC
 
-    CMP AL, '@'              ; Verificar si es el fin de la fila
+    CMP AL, '@'             ; Verificar si es el fin de la fila
     JE NEXT_ROW_PIC
-    
-    CMP AL, 0Dh   ; Retorno de carro (CR)
+
+    CMP AL, 0Dh             ; Retorno de carro
     JE COLUMN_LOOP_LOAD_PIC
-    CMP AL, 0Ah   ; Nueva línea (LF)
+    CMP AL, 0Ah             ; Nueva línea
     JE COLUMN_LOOP_LOAD_PIC
 
 DRAW_COLOR_PIC:
-    ; Convertir el carácter a su valor hexadecimal correspondiente
+    ; Convertir el carácter a su valor hexadecimal
     CALL ASCII_TO_COLOR
-    
+
     ; Dibujar el píxel con el color correspondiente
-    MOV AH, 0Ch              ; Función para dibujar píxel
-    MOV AL, AL
-    MOV BH, 0                ; Página 0
-    MOV CX, CX               ; Columna
-    MOV DX, DX               ; Fila
-    INT 10h                  ; Dibujar el píxel
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    INT 10h                 ; Dibujar el píxel
 
 NEXT_COLUMN_PIC:
-    ; Avanzar a la siguiente columna
-    INC CX
+    INC CX                  ; Avanzar a la siguiente columna
     CMP CX, DRAW_X_END
     JL COLUMN_LOOP_LOAD_PIC
 
 NEXT_ROW_PIC:
-    MOV CX, 200  
-    INC DX
-    JMP COLUMN_LOOP_LOAD_PIC     ; Continuar si no es el final
-
+    MOV CX, [X_POS]         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, DRAW_Y_END
+    JL COLUMN_LOOP_LOAD_PIC
 
 DONE_LOADING_PIC:
     ; Cerrar el archivo
-    MOV AH, 3Eh              ; Función para cerrar archivo
-    MOV BX, BX               ; Handle del archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
     INT 21h
-    CALL TEXT_PIC
-    MOV AX, 35            ; Esperar 2 segundos
+    CALL TEXT_PIC           ; Mostrar mensaje de éxito
+    MOV AX, 35              ; Esperar 2 segundos
     CALL DELAY_SECONDS
     RET
 
 FILE_ERROR_LOAD_PIC:
-    ; Manejo de errores (archivo no encontrado)
+    ; Manejo de errores
     CALL TEXT_ERROR_PIC
-    MOV AX, 35            ; Esperar 2 segundos
+    MOV AX, 35              ; Esperar 2 segundos
     CALL DELAY_SECONDS
     RET
-
 LOAD_IMAGE ENDP
+
 
 
 ;---------------------------------------------------------
