@@ -1921,6 +1921,8 @@ WAIT_FOR_CLICK:
     MOV CX, [X_POS]  ; Usar X_POS como columna inicial
     MOV DX, [Y_POS]  ; Usar Y_POS como fila inicial
 
+    CALL MOUSE_HIDE
+
     ; Restaurar el handler del archivo
 RESTORE_HANDLER:
     POP BX                  ; Restaurar BX con el handler del archivo
@@ -1970,6 +1972,9 @@ DONE_LOADING_PIC:
     MOV AH, 3Eh             ; Cerrar archivo
     MOV BX, BX              ; Handle del archivo
     INT 21h
+
+    CALL MOUSE_SHOW
+
     CALL TEXT_PIC           ; Mostrar mensaje de éxito
     MOV AX, 35              ; Esperar 2 segundos
     CALL DELAY_SECONDS
@@ -1983,6 +1988,11 @@ FILE_ERROR_LOAD_PIC:
     RET
 LOAD_IMAGE ENDP
 
+MOUSE_HIDE PROC
+    MOV AX, 02h    ; Ocultar cursor
+    INT 33h
+    RET
+MOUSE_HIDE ENDP
 
 
 ;---------------------------------------------------------
