@@ -30,6 +30,7 @@
     txtCargado DB 'Bosquejo cargado$'
     txtPicError DB 'Imagen no existe$'
     txtPic DB 'Imagen cargada$'
+    txtInvalido DB 'Debe ingresar texto$'
 
     LINE_POINTS dw 0,0,0,0 
     ; Colores correspondientes a cada rectángulo
@@ -655,6 +656,25 @@ PRINT_TXT_CARGADO:
 END_PRINT_TXT_CARGADO:
     RET
 TEXT_CARGADO ENDP
+
+TEXT_INVALIDO PROC
+    ; Escribe en pantalla texto del botón de guardar
+    CLD
+    MOV SI, OFFSET txtInvalido
+    TEXT_POSITION 25,36
+PRINT_TXT_INVALIDO:
+    LODSB              ; Cargar el siguiente byte del mensaje en AL
+    CMP AL, '$'
+    JE END_PRINT_TXT_INVALIDO
+    MOV AH, 0EH
+    MOV BH, 00H
+    MOV BL, 04H        ; Atributo del carácter (0Fh es blanco sobre negro)
+    INT 10H
+    JMP PRINT_TXT_INVALIDO
+
+END_PRINT_TXT_INVALIDO:
+    RET
+TEXT_INVALIDO ENDP
 
 DELAY_SECONDS PROC
     ; Guardar el número de segundos en CX para el bucle externo
@@ -1560,6 +1580,18 @@ RESET_CAMPO_TXT PROC
 RESET_CAMPO_TXT ENDP 
 
 SAVE_SKETCH PROC
+    MOV SI, FILENAME_INDEX
+    CMP SI, 0              ; Si el índice es 0, no se escribió nada
+    JE NO_FILENAME
+    JMP SAVE_SKETCH_PROCESS
+
+NO_FILENAME:
+    CALL TEXT_INVALIDO
+    MOV AX, 35            ; Esperar 2 segundos
+    CALL DELAY_SECONDS
+    RET
+
+SAVE_SKETCH_PROCESS:
     ; Preparar el nombre del archivo con ".txt"
     MOV SI, FILENAME_INDEX
     ADD SI, OFFSET FILENAME_BUFFER
@@ -1700,6 +1732,18 @@ CLEAR_BUFFER_LOOP:
 RESET_FILENAME_BUFFER ENDP
 
 LOAD_SKETCH PROC
+    MOV SI, FILENAME_INDEX
+    CMP SI, 0              ; Si el índice es 0, no se escribió nada
+    JE NO_FILENAME_LOAD
+    JMP LOAD_SKETCH_PROCESS
+
+NO_FILENAME_LOAD:
+    CALL TEXT_INVALIDO
+    MOV AX, 35            ; Esperar 2 segundos
+    CALL DELAY_SECONDS
+    RET
+
+LOAD_SKETCH_PROCESS:
     ; Preparar el nombre del archivo con ".txt"
     MOV SI, FILENAME_INDEX
     ADD SI, OFFSET FILENAME_BUFFER
@@ -1886,6 +1930,18 @@ RESET_NOMBRE PROC
 RESET_NOMBRE ENDP
 
 LOAD_IMAGE PROC
+    MOV SI, FILENAME_INDEX
+    CMP SI, 0              ; Si el índice es 0, no se escribió nada
+    JE NO_FILENAME_IMAGE
+    JMP LOAD_IMAGE_PROCESS
+
+NO_FILENAME_IMAGE:
+    CALL TEXT_INVALIDO
+    MOV AX, 35            ; Esperar 2 segundos
+    CALL DELAY_SECONDS
+    RET
+
+LOAD_IMAGE_PROCESS:
     ; Preparar el nombre del archivo con ".txt"
     MOV SI, FILENAME_INDEX
     ADD SI, OFFSET FILENAME_BUFFER
