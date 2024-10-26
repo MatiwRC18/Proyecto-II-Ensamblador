@@ -70,6 +70,21 @@
 
     TEMP_X DW 0      ; Variable para almacenar la coordenada X del clic
     TEMP_Y DW 0      ; Variable para almacenar la coordenada Y del clic
+
+    TRIANGULO DB 'TRIAN.txt', 0
+    CIRCULO DB 'CIRCU.txt', 0
+    DIAMANTE DB 'DIAMAN.txt', 0
+    FLECHA DB 'FLECHA.txt', 0
+    CORAZON DB 'CORAZON.txt', 0
+    ESTRELLA DB 'ESTRE.txt', 0
+
+    TRI DB 'TRI.txt', 0
+    CIR DB 'CIR.txt', 0
+    DIA DB 'DIA.txt', 0
+    FLE DB 'FLE.txt', 0
+    COR DB 'COR.txt', 0
+    EST DB 'EST.txt', 0
+
 .CODE
 
 INIT_SCREEN PROC
@@ -703,7 +718,7 @@ CIRCLE PROC
     MOV     X_C, DX         ; X_C = DX (coordenada X del centro del círculo)
     MOV     Y_C, CX         ; Y_C = CX (coordenada Y del centro del círculo)
 
-CIR:
+CIRC:
     MOV     DX, X           ; Copiar X a DX para comparación
     CMP     DX, Y           ; Comparar DX con Y (Y empieza en 0)
     JNGE    FIN_CIR         ; Si X < Y, salir del bucle y terminar el círculo
@@ -728,7 +743,7 @@ CIR:
     JG      E_CHECK         ; Si es positivo, ir a E_CHECK
 
     POP     AX              ; Restaurar el valor anterior de AX
-    JMP     CIR             ; Volver al inicio del bucle para la siguiente iteración
+    JMP     CIRC             ; Volver al inicio del bucle para la siguiente iteración
 
 E_CHECK:
     DEC     X               ; Decrementar X (avanzar hacia adentro en el eje X)
@@ -740,7 +755,7 @@ E_CHECK:
     ADD     E, DX           ; E = E + (1 - 2*X)
 
     POP     AX              ; Restaurar el valor anterior de AX
-    JMP     CIR             ; Volver al inicio del bucle para la siguiente iteración
+    JMP     CIRC             ; Volver al inicio del bucle para la siguiente iteración
 
 FIN_CIR:
     MOV WORD PTR [Y], 0     ; Reiniciar Y a 0
@@ -858,13 +873,64 @@ SET_GRAFICS PROC
     MOV AL, 0FH
     CALL FILL_RECTANGLE
 
-    MOV WORD PTR [X1], 170   ; Columna inicial (X1) para el tercer botón
-    MOV WORD PTR [Y1], 325  ; Fila inicial (Y1)
-    MOV WORD PTR [X2], 315  ; Columna final (X2)
-    MOV WORD PTR [Y2], 355  ; Fila final (Y2)
+    ; DIBUJAR RECTANGULO DE FIGURAS
+    MOV WORD PTR [X1], 110   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 315  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 375  ; Columna final (X2)
+    MOV WORD PTR [Y2], 365  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
+    
+    ; DIBUJAR CUADRADO DE TRIANGULO 
+    MOV WORD PTR [X1], 125   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 325  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 155  ; Columna final (X2)
+    MOV WORD PTR [Y2], 355  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+
+
+    ; DIBUJAR CUADRADO DE CIRCULO 
+    MOV WORD PTR [X1], 165   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 325  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 195  ; Columna final (X2)
+    MOV WORD PTR [Y2], 355  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+
+    ; DIBUJAR CUADRADO DE DIAMANTE 
+    MOV WORD PTR [X1], 205   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 325  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 235  ; Columna final (X2)
+    MOV WORD PTR [Y2], 355  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+
+    ; DIBUJAR CUADRADO DE FLECHA 
+    MOV WORD PTR [X1], 250   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 325  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 280  ; Columna final (X2)
+    MOV WORD PTR [Y2], 355  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+
+    ; DIBUJAR CUADRADO DE CORAZON 
+    MOV WORD PTR [X1], 290   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 325  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 320  ; Columna final (X2)
+    MOV WORD PTR [Y2], 355  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+
+    ; DIBUJAR CUADRADO DE ESTRELLA 
+    MOV WORD PTR [X1], 330   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 325  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 360  ; Columna final (X2)
+    MOV WORD PTR [Y2], 355  ; Fila final (Y2)
+    CALL DRAW_RECTANGLE_INTERACTIVE
+
+    CALL DRAW_TRIANGULO
+    CALL DRAW_CIRCULO
+    CALL DRAW_DIAMANTE
+    CALL DRAW_FLECHA
+    CALL DRAW_CORAZON
+    CALL DRAW_ESTRELLA
 
     ; Dibujar boton "guardar bosquejo"
     MOV WORD PTR [X1], 25   ; Columna inicial (X1) para el tercer botón
@@ -1038,21 +1104,17 @@ SET_GRAFICS PROC
     MOV AL, 0FH
     CALL FILL_RECTANGLE
 
-    
-
     MOV     DX,340
     MOV     CX,70
     MOV     SI,28
     MOV     AL, 0FH
     CALL    CIRCLE
 
-
     MOV     DX,340
     MOV     CX,415
     MOV     SI,28
     MOV     AL, 0FH
     CALL    CIRCLE
-
 
     CALL TEXT_GUARDAR
     CALL TEXT_CARGAR
@@ -1061,8 +1123,8 @@ SET_GRAFICS PROC
     CALL TEXT_CAMPO
     CALL TEXT_DIBUJO
     CALL TEXT_COLORES
-    CALL TEXT_SKETCH
     CALL TEXT_GRUESOR
+
 
     RET
 
@@ -2050,6 +2112,981 @@ MOUSE_HIDE PROC
     RET
 MOUSE_HIDE ENDP
 
+DRAW_TRIANGULO PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, TRIANGULO  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_TRIANGULO   ; Saltar si hay error
+    JMP TRAINGULO_PROCESS
+
+FILE_ERROR_TRIANGULO:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+TRAINGULO_PROCESS:
+
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    
+    MOV CX, 127  
+    MOV DX, 326 
+
+COLUMN_LOOP_TRIANGULO:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_TRIANGULO
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_TRIANGULO
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_TRIANGULO
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_TRIANGULO
+
+DRAW_COLOR_TRIANGULO:
+    
+    ; Convertir el carácter a su valor hexadecimal
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_TRIANGULO:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, 156
+    JL COLUMN_LOOP_TRIANGULO
+
+NEXT_ROW_TRIANGULO:
+    MOV CX, 127         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, 355
+    JL COLUMN_LOOP_TRIANGULO
+
+DONE_LOADING_TRIANGULO:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    RET
+
+DRAW_TRIANGULO ENDP
+
+DRAW_CIRCULO PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, CIRCULO  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_CIRCULO   ; Saltar si hay error
+    JMP CIRCULO_PROCESS
+
+FILE_ERROR_CIRCULO:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+CIRCULO_PROCESS:
+
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    
+    MOV CX, 167  
+    MOV DX, 326 
+
+COLUMN_LOOP_CIRCULO:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_CIRCULO
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_CIRCULO
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_CIRCULO
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_CIRCULO
+
+DRAW_COLOR_CIRCULO:
+    
+    ; Convertir el carácter a su valor hexadecimal
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_CIRCULO:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, 196
+    JL COLUMN_LOOP_CIRCULO
+
+NEXT_ROW_CIRCULO:
+    MOV CX, 167         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, 355
+    JL COLUMN_LOOP_CIRCULO
+
+DONE_LOADING_CIRCULO:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    RET
+
+DRAW_CIRCULO ENDP
+
+DRAW_DIAMANTE PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, DIAMANTE  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_DIAMANTE   ; Saltar si hay error
+    JMP DIAMANTE_PROCESS
+
+FILE_ERROR_DIAMANTE:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+DIAMANTE_PROCESS:
+
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    
+    MOV CX, 207  
+    MOV DX, 326 
+
+COLUMN_LOOP_DIAMANTE:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_DIAMANTE
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_DIAMANTE
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_DIAMANTE
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_DIAMANTE
+
+DRAW_COLOR_DIAMANTE:
+    
+    ; Convertir el carácter a su valor hexadecimal
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_DIAMANTE:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, 236
+    JL COLUMN_LOOP_DIAMANTE
+
+NEXT_ROW_DIAMANTE:
+    MOV CX, 207         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, 355
+    JL COLUMN_LOOP_DIAMANTE
+
+DONE_LOADING_DIAMANTE:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    RET
+
+DRAW_DIAMANTE ENDP
+
+DRAW_FLECHA PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, FLECHA  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_FLECHA   ; Saltar si hay error
+    JMP FLECHA_PROCESS
+
+FILE_ERROR_FLECHA:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+FLECHA_PROCESS:
+
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    
+    MOV CX, 252  
+    MOV DX, 326 
+
+COLUMN_LOOP_FLECHA:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_FLECHA
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_FLECHA
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_FLECHA
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_FLECHA
+
+DRAW_COLOR_FLECHA:
+    
+    ; Convertir el carácter a su valor hexadecimal
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_FLECHA:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, 281
+    JL COLUMN_LOOP_FLECHA
+
+NEXT_ROW_FLECHA:
+    MOV CX, 252         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, 355
+    JL COLUMN_LOOP_FLECHA
+
+DONE_LOADING_FLECHA:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    RET
+
+DRAW_FLECHA ENDP
+
+DRAW_CORAZON PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, CORAZON  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_CORAZON   ; Saltar si hay error
+    JMP CORAZON_PROCESS
+
+FILE_ERROR_CORAZON:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+CORAZON_PROCESS:
+
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    
+    MOV CX, 292  
+    MOV DX, 326 
+
+COLUMN_LOOP_CORAZON:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_CORAZON
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_CORAZON
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_CORAZON
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_CORAZON
+
+DRAW_COLOR_CORAZON:
+    
+    ; Convertir el carácter a su valor hexadecimal
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_CORAZON:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, 321
+    JL COLUMN_LOOP_CORAZON
+
+NEXT_ROW_CORAZON:
+    MOV CX, 292         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, 355
+    JL COLUMN_LOOP_CORAZON
+
+DONE_LOADING_CORAZON:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    RET
+
+DRAW_CORAZON ENDP
+
+DRAW_ESTRELLA PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, ESTRELLA  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_ESTRELLA   ; Saltar si hay error
+    JMP ESTRELLA_PROCESS
+
+FILE_ERROR_ESTRELLA:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+ESTRELLA_PROCESS:
+
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    
+    MOV CX, 332  
+    MOV DX, 326 
+
+COLUMN_LOOP_ESTRELLA:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_ESTRELLA
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_ESTRELLA
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_ESTRELLA
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_ESTRELLA
+
+DRAW_COLOR_ESTRELLA:
+    
+    ; Convertir el carácter a su valor hexadecimal
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_ESTRELLA:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, 361
+    JL COLUMN_LOOP_ESTRELLA
+
+NEXT_ROW_ESTRELLA:
+    MOV CX, 332         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, 355
+    JL COLUMN_LOOP_ESTRELLA
+
+DONE_LOADING_ESTRELLA:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    RET
+
+DRAW_ESTRELLA ENDP
+
+DRAW_TRI PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, TRI  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_TRI   ; Saltar si hay error
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    JMP WAIT_FOR_CLICK_TRI
+
+FILE_ERROR_TRI:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+WAIT_FOR_CLICK_TRI:
+    ; Preservar el handler antes de llamar al mouse
+    PUSH BX                  
+    CALL MOUSE_GET_POSITION  ; Obtener posición del mouse
+    CMP [BUTTONS], 1         ; Verificar si el botón izquierdo está presionado
+    JNE RESTORE_HANDLER_TRI      ; Si no, restaurar el handler y seguir esperando
+
+    ; Definir las coordenadas del área de dibujo (36,76) a (449,304)
+    SET_LINE_POINTS 36, 76, 449, 304
+    CALL IS_CLICK_INSIDE_RECTANGLE  ; Verificar si el clic está dentro del área
+    JNE RESTORE_HANDLER_TRI             ; Si no está dentro, restaurar handler y seguir esperando
+
+    ; Guardar las coordenadas del clic en CX y DX para iniciar el dibujo
+    
+    MOV CX, [X_POS]  ; Usar X_POS como columna inicial
+    MOV DX, [Y_POS]  ; Usar Y_POS como fila inicial
+
+    CALL MOUSE_HIDE
+
+    ; Restaurar el handler del archivo
+RESTORE_HANDLER_TRI:
+    POP BX                  ; Restaurar BX con el handler del archivo
+    JNE WAIT_FOR_CLICK_TRI      ; Si no se ha hecho clic válido, repetir
+
+COLUMN_LOOP_TRI:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL,'F'
+    JE NEXT_COLUMN_TRI
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_TRI
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_TRI
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_TRI
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_TRI
+
+DRAW_COLOR_TRI:
+    
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    MOV AL, [SELECTED_COLOR]
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_TRI:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, DRAW_X_END
+    JL COLUMN_LOOP_TRI
+
+NEXT_ROW_TRI:
+    MOV CX, [X_POS]         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, DRAW_Y_END
+    JL COLUMN_LOOP_TRI
+
+DONE_LOADING_TRI:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+
+    CALL MOUSE_SHOW
+    RET
+
+DRAW_TRI ENDP
+
+DRAW_CIR PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, CIR  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_CIR   ; Saltar si hay error
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    JMP WAIT_FOR_CLICK_CIR
+
+FILE_ERROR_CIR:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+WAIT_FOR_CLICK_CIR:
+    ; Preservar el handler antes de llamar al mouse
+    PUSH BX                  
+    CALL MOUSE_GET_POSITION  ; Obtener posición del mouse
+    CMP [BUTTONS], 1         ; Verificar si el botón izquierdo está presionado
+    JNE RESTORE_HANDLER_CIR      ; Si no, restaurar el handler y seguir esperando
+
+    ; Definir las coordenadas del área de dibujo (36,76) a (449,304)
+    SET_LINE_POINTS 36, 76, 449, 304
+    CALL IS_CLICK_INSIDE_RECTANGLE  ; Verificar si el clic está dentro del área
+    JNE RESTORE_HANDLER_CIR             ; Si no está dentro, restaurar handler y seguir esperando
+
+    ; Guardar las coordenadas del clic en CX y DX para iniciar el dibujo
+    
+    MOV CX, [X_POS]  ; Usar X_POS como columna inicial
+    MOV DX, [Y_POS]  ; Usar Y_POS como fila inicial
+
+    CALL MOUSE_HIDE
+
+    ; Restaurar el handler del archivo
+RESTORE_HANDLER_CIR:
+    POP BX                  ; Restaurar BX con el handler del archivo
+    JNE WAIT_FOR_CLICK_CIR      ; Si no se ha hecho clic válido, repetir
+
+COLUMN_LOOP_CIR:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL,'F'
+    JE NEXT_COLUMN_CIR
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_CIR
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_CIR
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_CIR
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_CIR
+
+DRAW_COLOR_CIR:
+    
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    MOV AL, [SELECTED_COLOR]
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_CIR:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, DRAW_X_END
+    JL COLUMN_LOOP_CIR
+
+NEXT_ROW_CIR:
+    MOV CX, [X_POS]         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, DRAW_Y_END
+    JL COLUMN_LOOP_CIR
+
+DONE_LOADING_CIR:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+
+    CALL MOUSE_SHOW
+    RET
+
+DRAW_CIR ENDP
+
+DRAW_DIA PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, DIA  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_DIA   ; Saltar si hay error
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    JMP WAIT_FOR_CLICK_DIA
+
+FILE_ERROR_DIA:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+WAIT_FOR_CLICK_DIA:
+    ; Preservar el handler antes de llamar al mouse
+    PUSH BX                  
+    CALL MOUSE_GET_POSITION  ; Obtener posición del mouse
+    CMP [BUTTONS], 1         ; Verificar si el botón izquierdo está presionado
+    JNE RESTORE_HANDLER_DIA      ; Si no, restaurar el handler y seguir esperando
+
+    ; Definir las coordenadas del área de dibujo (36,76) a (449,304)
+    SET_LINE_POINTS 36, 76, 449, 304
+    CALL IS_CLICK_INSIDE_RECTANGLE  ; Verificar si el clic está dentro del área
+    JNE RESTORE_HANDLER_DIA             ; Si no está dentro, restaurar handler y seguir esperando
+
+    ; Guardar las coordenadas del clic en CX y DX para iniciar el dibujo
+    
+    MOV CX, [X_POS]  ; Usar X_POS como columna inicial
+    MOV DX, [Y_POS]  ; Usar Y_POS como fila inicial
+
+    CALL MOUSE_HIDE
+
+    ; Restaurar el handler del archivo
+RESTORE_HANDLER_DIA:
+    POP BX                  ; Restaurar BX con el handler del archivo
+    JNE WAIT_FOR_CLICK_DIA      ; Si no se ha hecho clic válido, repetir
+
+COLUMN_LOOP_DIA:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL,'F'
+    JE NEXT_COLUMN_DIA
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_DIA
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_DIA
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_DIA
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_DIA
+
+DRAW_COLOR_DIA:
+    
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    MOV AL, [SELECTED_COLOR]
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_DIA:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, DRAW_X_END
+    JL COLUMN_LOOP_DIA
+
+NEXT_ROW_DIA:
+    MOV CX, [X_POS]         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, DRAW_Y_END
+    JL COLUMN_LOOP_DIA
+
+DONE_LOADING_DIA:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    CALL MOUSE_SHOW
+    RET
+
+DRAW_DIA ENDP
+
+DRAW_FLE PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, FLE  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_FLE   ; Saltar si hay error
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    JMP WAIT_FOR_CLICK_FLE
+
+FILE_ERROR_FLE:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+WAIT_FOR_CLICK_FLE:
+    ; Preservar el handler antes de llamar al mouse
+    PUSH BX                  
+    CALL MOUSE_GET_POSITION  ; Obtener posición del mouse
+    CMP [BUTTONS], 1         ; Verificar si el botón izquierdo está presionado
+    JNE RESTORE_HANDLER_FLE      ; Si no, restaurar el handler y seguir esperando
+
+    ; Definir las coordenadas del área de dibujo (36,76) a (449,304)
+    SET_LINE_POINTS 36, 76, 449, 304
+    CALL IS_CLICK_INSIDE_RECTANGLE  ; Verificar si el clic está dentro del área
+    JNE RESTORE_HANDLER_FLE             ; Si no está dentro, restaurar handler y seguir esperando
+
+    ; Guardar las coordenadas del clic en CX y DX para iniciar el dibujo
+    
+    MOV CX, [X_POS]  ; Usar X_POS como columna inicial
+    MOV DX, [Y_POS]  ; Usar Y_POS como fila inicial
+
+    CALL MOUSE_HIDE
+
+    ; Restaurar el handler del archivo
+RESTORE_HANDLER_FLE:
+    POP BX                  ; Restaurar BX con el handler del archivo
+    JNE WAIT_FOR_CLICK_FLE      ; Si no se ha hecho clic válido, repetir
+
+COLUMN_LOOP_FLE:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL,'F'
+    JE NEXT_COLUMN_FLE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_FLE
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_FLE
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_FLE
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_FLE
+
+DRAW_COLOR_FLE:
+    
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    MOV AL, [SELECTED_COLOR]
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_FLE:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, DRAW_X_END
+    JL COLUMN_LOOP_FLE
+
+NEXT_ROW_FLE:
+    MOV CX, [X_POS]         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, DRAW_Y_END
+    JL COLUMN_LOOP_FLE
+
+DONE_LOADING_FLE:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    CALL MOUSE_SHOW
+    RET
+
+DRAW_FLE ENDP
+
+DRAW_COR PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, COR  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_COR   ; Saltar si hay error
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    JMP WAIT_FOR_CLICK_COR
+
+FILE_ERROR_COR:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+WAIT_FOR_CLICK_COR:
+    ; Preservar el handler antes de llamar al mouse
+    PUSH BX                  
+    CALL MOUSE_GET_POSITION  ; Obtener posición del mouse
+    CMP [BUTTONS], 1         ; Verificar si el botón izquierdo está presionado
+    JNE RESTORE_HANDLER_COR      ; Si no, restaurar el handler y seguir esperando
+
+    ; Definir las coordenadas del área de dibujo (36,76) a (449,304)
+    SET_LINE_POINTS 36, 76, 449, 304
+    CALL IS_CLICK_INSIDE_RECTANGLE  ; Verificar si el clic está dentro del área
+    JNE RESTORE_HANDLER_COR             ; Si no está dentro, restaurar handler y seguir esperando
+
+    ; Guardar las coordenadas del clic en CX y DX para iniciar el dibujo
+    
+    MOV CX, [X_POS]  ; Usar X_POS como columna inicial
+    MOV DX, [Y_POS]  ; Usar Y_POS como fila inicial
+
+    CALL MOUSE_HIDE
+
+    ; Restaurar el handler del archivo
+RESTORE_HANDLER_COR:
+   
+    POP BX                  ; Restaurar BX con el handler del archivo
+    JNE WAIT_FOR_CLICK_COR      ; Si no se ha hecho clic válido, repetir
+
+COLUMN_LOOP_COR:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL,'F'
+    JE NEXT_COLUMN_COR
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_COR
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_COR
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_COR
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_COR
+
+DRAW_COLOR_COR:
+    
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    MOV AL, [SELECTED_COLOR]
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_COR:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, DRAW_X_END
+    JL COLUMN_LOOP_COR
+
+NEXT_ROW_COR:
+    MOV CX, [X_POS]         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, DRAW_Y_END
+    JL COLUMN_LOOP_COR
+
+DONE_LOADING_COR:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    CALL MOUSE_SHOW
+    RET
+
+DRAW_COR ENDP
+
+DRAW_EST PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, EST  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_EST   ; Saltar si hay error
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    JMP WAIT_FOR_CLICK_EST
+
+FILE_ERROR_EST:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+WAIT_FOR_CLICK_EST:
+    
+    ; Preservar el handler antes de llamar al mouse
+    PUSH BX                  
+    CALL MOUSE_GET_POSITION  ; Obtener posición del mouse
+    CMP [BUTTONS], 1         ; Verificar si el botón izquierdo está presionado
+    JNE RESTORE_HANDLER_EST      ; Si no, restaurar el handler y seguir esperando
+
+    ; Definir las coordenadas del área de dibujo (36,76) a (449,304)
+    SET_LINE_POINTS 36, 76, 449, 304
+    CALL IS_CLICK_INSIDE_RECTANGLE  ; Verificar si el clic está dentro del área
+    JNE RESTORE_HANDLER_EST             ; Si no está dentro, restaurar handler y seguir esperando
+
+    ; Guardar las coordenadas del clic en CX y DX para iniciar el dibujo    
+    
+    MOV CX, [X_POS]  ; Usar X_POS como columna inicial
+    MOV DX, [Y_POS]  ; Usar Y_POS como fila inicial
+
+    CALL MOUSE_HIDE
+    ; Restaurar el handler del archivo
+RESTORE_HANDLER_EST:
+    
+    POP BX                  ; Restaurar BX con el handler del archivo
+    JNE WAIT_FOR_CLICK_EST      ; Si no se ha hecho clic válido, repetir
+
+COLUMN_LOOP_EST:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL,'F'
+    JE NEXT_COLUMN_EST
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_EST
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_EST
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_EST
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_EST
+
+DRAW_COLOR_EST:
+    
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    MOV AL, [SELECTED_COLOR]
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_EST:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, DRAW_X_END
+    JL COLUMN_LOOP_EST
+
+NEXT_ROW_EST:
+    MOV CX, [X_POS]         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, DRAW_Y_END
+    JL COLUMN_LOOP_EST
+
+DONE_LOADING_EST:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    CALL MOUSE_SHOW
+    RET
+
+DRAW_EST ENDP
 
 ;---------------------------------------------------------
 ; PROGRAMA PRINCIPAL
@@ -2191,8 +3228,44 @@ MAIN_LOOP:
     CHECK_RECT_18:
     SET_LINE_POINTS 255, 435, 390, 470
     CALL IS_CLICK_INSIDE_RECTANGLE
-    JE LOAD_PIC
-    
+    JNE CHECK_RECT_19
+    JMP LOAD_PIC
+
+    CHECK_RECT_19:
+    SET_LINE_POINTS 125, 325, 155, 355
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_20
+    JMP PRINT_TRIANGULO
+
+    CHECK_RECT_20:
+    SET_LINE_POINTS 165, 325, 195, 355
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_21
+    JMP PRINT_CIRCULO
+
+    CHECK_RECT_21:
+    SET_LINE_POINTS 205, 325, 235, 355
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_22
+    JMP PRINT_DIAMANTE
+
+    CHECK_RECT_22:
+    SET_LINE_POINTS 250, 325, 280, 355
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_23
+    JMP PRINT_FLECHA
+
+    CHECK_RECT_23:
+    SET_LINE_POINTS 290, 325, 320, 355
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JNE CHECK_RECT_24
+    JMP PRINT_CORAZON
+
+    CHECK_RECT_24:
+    SET_LINE_POINTS 330, 325, 360, 355
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JE PRINT_ESTRELLA
+     
     CALL DRAWING_LOOP
 
 DRAW_PROCESS:
@@ -2200,6 +3273,30 @@ DRAW_PROCESS:
     MOV [SELECTED_COLOR], AL
     CALL DRAWING_LOOP
     JMP MAIN_LOOP           ; Continuar verificando clics
+
+PRINT_ESTRELLA:
+    CALL DRAW_EST
+    JMP MAIN_LOOP
+
+PRINT_TRIANGULO:
+    CALL DRAW_TRI
+    JMP MAIN_LOOP
+
+PRINT_CIRCULO:
+    CALL DRAW_CIR
+    JMP MAIN_LOOP
+
+PRINT_DIAMANTE:
+    CALL DRAW_DIA
+    JMP MAIN_LOOP
+
+PRINT_FLECHA:
+    CALL DRAW_FLE
+    JMP MAIN_LOOP
+
+PRINT_CORAZON:
+    CALL DRAW_COR
+    JMP MAIN_LOOP
 
 LOAD_PIC:
     CALL LOAD_IMAGE
