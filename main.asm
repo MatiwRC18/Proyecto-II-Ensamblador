@@ -8,11 +8,6 @@
     X2 DW 0
     Y2 DW 0
 
-    Y DW  0
-    X DW  0
-    Y_C DW  0
-    X_C DW  0
-    E DW  0
 
    ; Cadenas de texto (terminadas en '$')
     txtGuardar DB 'Guardar bosquejo$'
@@ -45,11 +40,6 @@
     DRAW_X DW ?
     DRAW_Y DW ?
 
-    DRAW_X1 DW 36     ; Limite izquierdo del área de dibujo
-    DRAW_Y1 DW 76     ; Limite superior del área de dibujo
-    DRAW_X2 DW 449    ; Limite derecho del área de dibujo
-    DRAW_Y2 DW 304    ; Limite inferior del área de dibujo
-
     ; Definir el área de texto y límites
     TXT_COLUMN_START EQU 36     ; Columna inicial (aproximado desde 190px)
     TXT_ROW_START    EQU 25      ; Fila inicial (aproximado desde 395px)
@@ -68,15 +58,16 @@
     DRAW_Y_START EQU 76    ; Coordenada Y inicial del área de dibujo
     DRAW_Y_END   EQU 304   ; Coordenada Y final del área de dibujo
 
-    TEMP_X DW 0      ; Variable para almacenar la coordenada X del clic
-    TEMP_Y DW 0      ; Variable para almacenar la coordenada Y del clic
-
     TRIANGULO DB 'TRIAN.txt', 0
     CIRCULO DB 'CIRCU.txt', 0
     DIAMANTE DB 'DIAMAN.txt', 0
     FLECHA DB 'FLECHA.txt', 0
     CORAZON DB 'CORAZON.txt', 0
     ESTRELLA DB 'ESTRE.txt', 0
+    FONDO DB 'FONDO.txt', 0
+    SKETCH DB 'SKETCH.txt', 0
+    RELLENO DB 'RELLENO.txt', 0
+    PORTADA DB 'PORTADA.txt', 0
 
     TRI DB 'TRI.txt', 0
     CIR DB 'CIR.txt', 0
@@ -100,29 +91,14 @@ PRINT_PIXEL PROC
 PRINT_PIXEL ENDP
 
 CLEAR_SCREEN PROC
-    MOV AX, 0F00H       ; Establecer color blanco (0F en modo gráfico)
-    MOV CX, 0           ; Iniciar desde la esquina superior izquierda
-    MOV DX, 0
-
-PAINT_SCREEN:
-    MOV AH, 0CH         ; Función BIOS para pintar un píxel
-    MOV AL, 08H         ; Establecer color blanco
-    INT 10H             ; Interrupción de video BIOS para pintar el píxel
-    INC CX              ; Avanzar en X (columna)
-    CMP CX, 640         ; ¿Llegamos al borde derecho?
-    JNE PAINT_SCREEN
-
-    MOV CX, 0           ; Reiniciar la columna
-    INC DX              ; Avanzar en Y (fila)
-    CMP DX, 480         ; ¿Llegamos al final de la pantalla?
-    JNE PAINT_SCREEN
+    CALL DRAW_FONDO
 
     RET
 CLEAR_SCREEN ENDP
 
 DRAW_RECTANGLE PROC
     ; Dibujar la línea superior (de X1 a X2 en Y1)
-    MOV AL, 00H       ; Color rojo
+           
     MOV DX, [Y1]        ; Y1 (Fila inicial)
     MOV CX, [X1]        ; X1 (Columna inicial)
 TOP_LINE:
@@ -132,7 +108,7 @@ TOP_LINE:
     JLE TOP_LINE        ; Si no, continuar
 
     ; Dibujar la línea inferior (de X1 a X2 en Y2)
-    MOV AL, 00H         ; Color rojo
+             
     MOV DX, [Y2]        ; Y2 (Fila final)
     MOV CX, [X1]        ; X1
 BOTTOM_LINE:
@@ -142,7 +118,6 @@ BOTTOM_LINE:
     JLE BOTTOM_LINE
 
     ; Dibujar la línea izquierda (de Y1 a Y2 en X1)
-    MOV AL, 00H         ; Color rojo
     MOV CX, [X1]        ; X1
     MOV DX, [Y1]        ; Y1
 LEFT_LINE:
@@ -152,7 +127,6 @@ LEFT_LINE:
     JLE LEFT_LINE
 
     ; Dibujar la línea derecha (de Y1 a Y2 en X2)
-    MOV AL, 00H         ; Color rojo
     MOV CX, [X2]        ; X2
     MOV DX, [Y1]        ; Y1
 RIGHT_LINE:
@@ -166,7 +140,7 @@ DRAW_RECTANGLE ENDP
 
 DRAW_RECTANGLE_INTERACTIVE PROC
     ; Dibujar la línea superior (de X1 a X2 en Y1)
-    MOV AL, 0FH       ; Color rojo
+    MOV AL, 15       ; Color rojo
     MOV DX, [Y1]        ; Y1 (Fila inicial)
     MOV CX, [X1]        ; X1 (Columna inicial)
 TOP_LINE_INTERACTIVE:
@@ -176,7 +150,7 @@ TOP_LINE_INTERACTIVE:
     JLE TOP_LINE_INTERACTIVE       ; Si no, continuar
 
     ; Dibujar la línea inferior (de X1 a X2 en Y2)
-    MOV AL, 0FH         ; Color rojo
+    MOV AL, 15         ; Color rojo
     MOV DX, [Y2]        ; Y2 (Fila final)
     MOV CX, [X1]        ; X1
 BOTTOM_LINE_INTERACTIVE:
@@ -186,7 +160,7 @@ BOTTOM_LINE_INTERACTIVE:
     JLE BOTTOM_LINE_INTERACTIVE
 
     ; Dibujar la línea izquierda (de Y1 a Y2 en X1)
-    MOV AL, 0FH         ; Color rojo
+    MOV AL, 15         ; Color rojo
     MOV CX, [X1]        ; X1
     MOV DX, [Y1]        ; Y1
 LEFT_LINE_INTERACTIVE:
@@ -196,7 +170,7 @@ LEFT_LINE_INTERACTIVE:
     JLE LEFT_LINE_INTERACTIVE
 
     ; Dibujar la línea derecha (de Y1 a Y2 en X2)
-    MOV AL, 0FH         ; Color rojo
+    MOV AL, 15         ; Color rojo
     MOV CX, [X2]        ; X2
     MOV DX, [Y1]        ; Y1
 RIGHT_LINE_INTERACTIVE:
@@ -226,158 +200,6 @@ FILL_PIXELS:
     JL FILL_ROWS       ; Si no, continuar rellenando
     RET
 FILL_RECTANGLE ENDP
-
-DRAW_ARROW_UP PROC
-    MOV BH, 00H    ; Página 0
-    MOV AL, 0FH    ; Color VERDE
-    ; Dibujar la línea HORIZONTAL DEL TRIANGULO 
-    MOV CX, 537
-    MOV DX, 410
-DRAW_HORIZONTAL_LINE_UP:
-    MOV AH, 0CH
-    INT 10H
-    INC CX
-    CMP CX, 557
-    JNE DRAW_HORIZONTAL_LINE_UP
-
-    ; Dibujar SLASH DEL TRIANGULO (\)
-    MOV CX, 557
-    MOV DX, 410
-DRAW_SLASH_LEFT_UP:
-    MOV AH, 0CH
-    INT 10H
-    DEC CX
-    DEC DX
-    CMP CX, 546
-    JNE DRAW_SLASH_LEFT_UP
-
-    ; Dibujar SLASH DEL TRIANGULO (/)
-    MOV CX, 537
-    MOV DX, 410
-DRAW_SLASH_RIGHT_UP:
-    MOV AH, 0CH
-    INT 10H
-    INC CX
-    DEC DX
-    CMP CX, 547
-    JNE DRAW_SLASH_RIGHT_UP
-
-    RET
-DRAW_ARROW_UP ENDP
-
-DRAW_ARROW_DOWN PROC
-    MOV BH, 00H    ; Página 0
-    MOV AL, 0FH    ; Color VERDE
-    ; Dibujar la línea HORIZONTAL DEL TRIANGULO 
-    MOV CX, 537
-    MOV DX, 435
-DRAW_HORIZONTAL_LINE_DOWN:
-    MOV AH, 0CH
-    INT 10H
-    INC CX
-    CMP CX, 557
-    JNE DRAW_HORIZONTAL_LINE_DOWN
-
-    ; Dibujar SLASH DEL TRIANGULO (\)
-    MOV CX, 547
-    MOV DX, 445
-DRAW_SLASH_LEFT_DOWN:
-    MOV AH, 0CH
-    INT 10H
-    DEC CX
-    DEC DX
-    CMP CX, 537
-    JNE DRAW_SLASH_LEFT_DOWN
-
-    ; Dibujar SLASH DEL TRIANGULO (/)
-    MOV CX, 547
-    MOV DX, 445
-DRAW_SLASH_RIGHT_DOWN:
-    MOV AH, 0CH
-    INT 10H
-    INC CX
-    DEC DX
-    CMP CX, 557
-    JNE DRAW_SLASH_RIGHT_DOWN
-
-    RET
-DRAW_ARROW_DOWN ENDP
-
-DRAW_ARROW_RIGHT PROC
-    MOV BH, 00H    ; Página 0
-    MOV AL, 0FH    
-    ; Dibujar la línea VERTICAL DEL TRIANGULO 
-    MOV CX, 577
-    MOV DX, 450
-DRAW_VERTICAL_LINE_RIGHT:
-    MOV AH, 0CH
-    INT 10H
-    DEC DX
-    CMP DX, 430
-    JNE DRAW_VERTICAL_LINE_RIGHT
-
-    ; Dibujar SLASH DEL TRIANGULO (\)
-    MOV CX, 587
-    MOV DX, 440
-DRAW_SLASH_LEFT_RIGHT:
-    MOV AH, 0CH
-    INT 10H
-    DEC CX
-    DEC DX
-    CMP CX, 577
-    JNE DRAW_SLASH_LEFT_RIGHT
-
-    ; Dibujar SLASH DEL TRIANGULO (/)
-    MOV CX, 577
-    MOV DX, 450
-DRAW_SLASH_RIGHT_RIGHT:
-    MOV AH, 0CH
-    INT 10H
-    INC CX
-    DEC DX
-    CMP CX, 587
-    JNE DRAW_SLASH_RIGHT_RIGHT
-
-    RET
-DRAW_ARROW_RIGHT ENDP
-
-DRAW_ARROW_LEFT PROC
-    MOV BH, 00H    ; Página 0
-    MOV AL, 0FH    ; Color VERDE
-    ; Dibujar la línea VERTICAL DEL TRIANGULO 
-    MOV CX, 517
-    MOV DX, 450
-DRAW_VERTICAL_LINE_LEFT:
-    MOV AH, 0CH
-    INT 10H
-    DEC DX
-    CMP DX, 430
-    JNE DRAW_VERTICAL_LINE_LEFT
-
-    ; Dibujar SLASH DEL TRIANGULO (\)
-    MOV CX, 517
-    MOV DX, 450
-DRAW_SLASH_LEFT_LEFT:
-    MOV AH, 0CH
-    INT 10H
-    DEC CX
-    DEC DX
-    CMP CX, 507
-    JNE DRAW_SLASH_LEFT_LEFT
-
-    ; Dibujar SLASH DEL TRIANGULO (/)
-    MOV CX, 507
-    MOV DX, 440
-DRAW_SLASH_RIGHT_LEFT:
-    MOV AH, 0CH
-    INT 10H
-    INC CX
-    DEC DX
-    CMP CX, 517
-    JNE DRAW_SLASH_RIGHT_LEFT
-
-    RET
-DRAW_ARROW_LEFT ENDP
 
 TEXT_POSITION MACRO fila, columna
     MOV AH, 02H          ; Función 02h - Mover el cursor
@@ -709,126 +531,6 @@ DELAY_LOOP:
     RET
 DELAY_SECONDS ENDP
 
-CIRCLE PROC
-    
-    PUSH    DX              ; Guardar registro DX en la pila para preservarlo
-    PUSH    CX              ; Guardar registro CX en la pila para preservarlo
-
-    MOV     X, SI           ; X = SI (radio inicial)
-    MOV     X_C, DX         ; X_C = DX (coordenada X del centro del círculo)
-    MOV     Y_C, CX         ; Y_C = CX (coordenada Y del centro del círculo)
-
-CIRC:
-    MOV     DX, X           ; Copiar X a DX para comparación
-    CMP     DX, Y           ; Comparar DX con Y (Y empieza en 0)
-    JNGE    FIN_CIR         ; Si X < Y, salir del bucle y terminar el círculo
-
-    CALL    DRAWCIRCLE      ; Llamar a la función que dibuja los puntos del círculo
-
-    INC     Y               ; Incrementar Y para la siguiente iteración (avanzar en el eje Y)
-
-    PUSH    AX              ; Guardar el valor de AX para preservar el resultado de la multiplicación
-
-    MOV     AX, 2           ; Preparar para calcular 2*Y
-    MUL     Y               ; AX = 2*Y
-    INC     AX              ; AX = 2*Y + 1
-    ADD     AX, E           ; E = E + (2*Y + 1)
-    MOV     E, AX           ; Actualizar E con el nuevo valor
-
-    SUB     AX, X           ; Calcular AX - X (diferencia entre AX y X)
-    MOV     DX, 2           ; Preparar para multiplicación por 2
-    MUL     DX              ; AX = 2*(AX - X)
-    INC     AX              ; AX = AX + 1
-    CMP     AX, 0           ; Comparar el resultado con 0
-    JG      E_CHECK         ; Si es positivo, ir a E_CHECK
-
-    POP     AX              ; Restaurar el valor anterior de AX
-    JMP     CIRC             ; Volver al inicio del bucle para la siguiente iteración
-
-E_CHECK:
-    DEC     X               ; Decrementar X (avanzar hacia adentro en el eje X)
-    MOV     AX, X           ; Copiar X a AX
-    MOV     DX, 2           ; Preparar para multiplicación por 2
-    MUL     DX              ; AX = 2*X
-    MOV     DX, 1           ; DX = 1
-    SUB     DX, AX          ; DX = 1 - (2*X)
-    ADD     E, DX           ; E = E + (1 - 2*X)
-
-    POP     AX              ; Restaurar el valor anterior de AX
-    JMP     CIRC             ; Volver al inicio del bucle para la siguiente iteración
-
-FIN_CIR:
-    MOV WORD PTR [Y], 0     ; Reiniciar Y a 0
-    MOV WORD PTR [X], 0     ; Reiniciar X a 0
-    MOV WORD PTR [E], 0     ; Reiniciar E a 0
-    MOV WORD PTR [Y_C], 0   ; Reiniciar Y_C a 0
-    MOV WORD PTR [X_C], 0   ; Reiniciar X_C a 0
-    
-    POP     CX              ; Restaurar el valor original de CX
-    POP     DX              ; Restaurar el valor original de DX
-
-    RET                     ; Retornar al final del procedimiento
-CIRCLE ENDP
-
-DRAWCIRCLE PROC
-    PUSH    DX              ; Guardar DX en la pila
-    PUSH    CX              ; Guardar CX en la pila
-
-    ; Dibujar el primer punto: (X_C + X, Y_C + Y)  ESTE 
-    MOV     DX, X_C
-    MOV     CX, Y_C
-    ADD     DX, X           ; DX = X_C + X
-    ADD     CX, Y           ; CX = Y_C + Y
-    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
-
-    ; Dibujar el segundo punto: (X_C + Y, Y_C + X) ESTE 
-    MOV     DX, X_C
-    MOV     CX, Y_C
-    ADD     DX, Y           ; DX = X_C + Y
-    ADD     CX, X           ; CX = Y_C + X
-    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
-
-    ; Dibujar el tercer punto: (X_C - Y, Y_C + X) ESTE 
-    MOV     DX, X_C
-    SUB     DX, Y           ; DX = X_C - Y
-    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
-
-    ; Dibujar el cuarto punto: (X_C - X, Y_C + Y)  ESTE 
-    MOV     DX, X_C
-    MOV     CX, Y_C
-    SUB     DX, X           ; DX = X_C - X
-    ADD     CX, Y           ; CX = Y_C + Y
-    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
-
-    ; Dibujar el quinto punto: (X_C - X, Y_C - Y) ESTE 
-    MOV     CX, Y_C
-    SUB     CX, Y           ; CX = Y_C - Y
-    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
-
-    ; Dibujar el sexto punto: (X_C - Y, Y_C - X) ESTE
-    MOV     DX, X_C
-    MOV     CX, Y_C
-    SUB     DX, Y           ; DX = X_C - Y
-    SUB     CX, X           ; CX = Y_C - X
-    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
-
-    ; Dibujar el séptimo punto: (X_C + Y, Y_C - X) ESTE  
-    MOV     DX, X_C
-    ADD     DX, Y           ; DX = X_C + Y
-    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
-
-    ; Dibujar el octavo punto: (X_C + X, Y_C - Y) ESTE 
-    MOV     DX, X_C
-    MOV     CX, Y_C
-    ADD     DX, X           ; DX = X_C + X
-    SUB     CX, Y           ; CX = Y_C - Y
-    CALL    PRINT_PIXEL     ; Llamar a la función para dibujar el píxel en (DX, CX)
-
-    POP     CX              ; Restaurar el valor original de CX
-    POP     DX              ; Restaurar el valor original de DX
-    RET                     ; Retornar al final del procedimiento
-DRAWCIRCLE ENDP
-
 SET_GRAFICS PROC 
 
     ; Inicializar la pantalla en modo gráfico
@@ -842,7 +544,8 @@ SET_GRAFICS PROC
     MOV WORD PTR [Y1], 25   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 350  ; Columna final (X2)
     MOV WORD PTR [Y2], 50   ; Fila final (Y2)
-    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 12
+    CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
@@ -851,33 +554,36 @@ SET_GRAFICS PROC
     MOV WORD PTR [Y1], 25   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 460  ; Columna final (X2)
     MOV WORD PTR [Y2], 50   ; Fila final (Y2)
-    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 12
+    CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
     ; DIBUJAR SKETCH
-    MOV WORD PTR [X1], 25   ; Columna inicial (X1) para el tercer botón
-    MOV WORD PTR [Y1], 65   ; Fila inicial (Y1)
+    MOV WORD PTR [X1], 24   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 64   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 460  ; Columna final (X2)
     MOV WORD PTR [Y2], 375  ; Fila final (Y2)
     CALL DRAW_RECTANGLE
-    MOV AL, 04H
-    CALL FILL_RECTANGLE
+    CALL DRAW_SKETCH
     
     ; Dibujar area de dibujo
     MOV WORD PTR [X1], 35   ; Columna inicial (X1) para el tercer botón
     MOV WORD PTR [Y1], 75   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 450  ; Columna final (X2)
     MOV WORD PTR [Y2], 305  ; Fila final (Y2)
+    MOV AL, 0
     CALL DRAW_RECTANGLE
     MOV AL, 0FH
     CALL FILL_RECTANGLE
+    CALL DRAW_PORTADA
 
     ; DIBUJAR RECTANGULO DE FIGURAS
     MOV WORD PTR [X1], 110   ; Columna inicial (X1) para el tercer botón
     MOV WORD PTR [Y1], 315  ; Fila inicial (Y1)
     MOV WORD PTR [X2], 375  ; Columna final (X2)
     MOV WORD PTR [Y2], 365  ; Fila final (Y2)
+    MOV AL, 4
     CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
@@ -937,7 +643,8 @@ SET_GRAFICS PROC
     MOV WORD PTR [Y1], 390  ; Fila inicial (Y1)
     MOV WORD PTR [X2], 164  ; Columna final (X2)
     MOV WORD PTR [Y2], 425  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 12
+    CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
@@ -946,7 +653,8 @@ SET_GRAFICS PROC
     MOV WORD PTR [Y1], 435  ; Fila inicial (Y1)
     MOV WORD PTR [X2], 157  ; Columna final (X2)
     MOV WORD PTR [Y2], 470  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 12
+    CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
@@ -955,7 +663,8 @@ SET_GRAFICS PROC
     MOV WORD PTR [Y1], 390  ; Fila inicial (Y1)
     MOV WORD PTR [X2], 460  ; Columna final (X2)
     MOV WORD PTR [Y2], 420  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 12
+    CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
@@ -964,16 +673,29 @@ SET_GRAFICS PROC
     MOV WORD PTR [Y1], 435  ; Fila inicial (Y1)
     MOV WORD PTR [X2], 390  ; Columna final (X2)
     MOV WORD PTR [Y2], 470  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 12
+    CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
+
+    ; Dibujar boton "RELLENO"
+    MOV WORD PTR [X1], 429  ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 434  ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 460  ; Columna final (X2)
+    MOV WORD PTR [Y2], 465  ; Fila final (Y2)
+    MOV AL, 12
+    CALL DRAW_RECTANGLE
+    MOV AL, 00H
+    CALL FILL_RECTANGLE
+    CALL DRAW_RELLENO
 
     ; Dibujar area  "Colores"
     MOV WORD PTR [X1], 480  ; Columna inicial (X1) para el tercer botón
     MOV WORD PTR [Y1], 25   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 615  ; Columna final (X2)
     MOV WORD PTR [Y2], 375  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 12
+    CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
@@ -1073,7 +795,8 @@ SET_GRAFICS PROC
     MOV WORD PTR [Y1], 390   ; Fila inicial (Y1)
     MOV WORD PTR [X2], 615  ; Columna final (X2)
     MOV WORD PTR [Y2], 470  ; Fila final (Y2)
-    CALL DRAW_RECTANGLE_INTERACTIVE
+    MOV AL, 12
+    CALL DRAW_RECTANGLE
     MOV AL, 00H
     CALL FILL_RECTANGLE
 
@@ -1103,18 +826,6 @@ SET_GRAFICS PROC
     CALL DRAW_RECTANGLE_INTERACTIVE
     MOV AL, 0FH
     CALL FILL_RECTANGLE
-
-    MOV     DX,340
-    MOV     CX,70
-    MOV     SI,28
-    MOV     AL, 0FH
-    CALL    CIRCLE
-
-    MOV     DX,340
-    MOV     CX,415
-    MOV     SI,28
-    MOV     AL, 0FH
-    CALL    CIRCLE
 
     CALL TEXT_GUARDAR
     CALL TEXT_CARGAR
@@ -1695,7 +1406,7 @@ COLUMN_LOOP:
 
     ; Avanzar a la siguiente columna (X)
     INC CX
-    CMP CX, DRAW_X2       ; Verificar si llegamos al final de la fila
+    CMP CX, DRAW_X_END       ; Verificar si llegamos al final de la fila
     JL COLUMN_LOOP
 
     ; Escribir '@' para indicar fin de la fila
@@ -1714,7 +1425,7 @@ COLUMN_LOOP:
 
     ; Avanzar a la siguiente fila (Y)
     INC DX
-    CMP DX, DRAW_Y2       ; Verificar si llegamos al final del área de dibujo
+    CMP DX, DRAW_Y_END       ; Verificar si llegamos al final del área de dibujo
     JL ROW_LOOP
 
     ; Escribir '%' para indicar fin del archivo
@@ -3088,6 +2799,305 @@ DONE_LOADING_EST:
 
 DRAW_EST ENDP
 
+DRAW_FONDO PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, FONDO  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_FONDO   ; Saltar si hay error
+    JMP FONDO_PROCESS
+
+FILE_ERROR_FONDO:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+FONDO_PROCESS:
+
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    
+    MOV CX, 0  
+    MOV DX, 0 
+
+COLUMN_LOOP_FONDO:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_FONDO
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_FONDO
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_FONDO
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_FONDO
+
+DRAW_COLOR_FONDO:
+    
+    ; Convertir el carácter a su valor hexadecimal
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_FONDO:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, 642
+    JL COLUMN_LOOP_FONDO
+
+NEXT_ROW_FONDO:
+    MOV CX, 0         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, 481
+    JL COLUMN_LOOP_FONDO
+
+DONE_LOADING_FONDO:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    RET
+
+DRAW_FONDO ENDP
+
+
+DRAW_SKETCH PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, SKETCH  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_SKETCH   ; Saltar si hay error
+    JMP SKETCH_PROCESS
+
+FILE_ERROR_SKETCH:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+SKETCH_PROCESS:
+
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    
+    MOV CX, 25  
+    MOV DX, 65 
+
+COLUMN_LOOP_SKETCH:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_SKETCH
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_SKETCH
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_SKETCH
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_SKETCH
+
+DRAW_COLOR_SKETCH:
+    
+    ; Convertir el carácter a su valor hexadecimal
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_SKETCH:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, 462
+    JL COLUMN_LOOP_SKETCH
+
+NEXT_ROW_SKETCH:
+    MOV CX, 25         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, 376
+    JL COLUMN_LOOP_SKETCH
+
+DONE_LOADING_SKETCH:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    RET
+
+DRAW_SKETCH ENDP
+
+
+DRAW_RELLENO PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, RELLENO  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_RELLENO   ; Saltar si hay error
+    JMP RELLENO_PROCESS
+
+FILE_ERROR_RELLENO:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+RELLENO_PROCESS:
+
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    
+    MOV CX, 430  
+    MOV DX, 435 
+
+COLUMN_LOOP_RELLENO:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_RELLENO
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_RELLENO
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_RELLENO
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_RELLENO
+
+DRAW_COLOR_RELLENO:
+    
+    ; Convertir el carácter a su valor hexadecimal
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_RELLENO:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, 462
+    JL COLUMN_LOOP_RELLENO
+
+NEXT_ROW_RELLENO:
+    MOV CX, 430         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, 466
+    JL COLUMN_LOOP_RELLENO
+
+DONE_LOADING_RELLENO:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    RET
+
+DRAW_RELLENO ENDP
+
+DRAW_PORTADA PROC
+    
+    ; Abrir el archivo
+    MOV AH, 3Dh              ; Función para abrir archivo
+    MOV AL, 0                ; Modo de lectura
+    LEA DX, PORTADA  ; Dirección del nombre del archivo
+    INT 21h
+    JC FILE_ERROR_PORTADA   ; Saltar si hay error
+    JMP PORTADA_PROCESS
+
+FILE_ERROR_PORTADA:
+    MOV CX, 200
+    MOV DX, 200
+    MOV AL, 4
+    CALL PRINT_PIXEL    
+    RET
+
+PORTADA_PROCESS:
+
+    MOV BX, AX               ; Guardar el handler del archivo en BX
+    
+    MOV CX, 36 
+    MOV DX, 76 
+
+COLUMN_LOOP_PORTADA:
+    
+    ; Leer un byte del archivo (color)
+    CALL READ_BYTE
+
+    CMP AL, '%'             ; Verificar si es el fin del archivo
+    JE DONE_LOADING_PORTADA
+
+    CMP AL, '@'             ; Verificar si es el fin de la fila
+    JE NEXT_ROW_PORTADA
+
+    CMP AL, 0Dh             ; Retorno de carro
+    JE COLUMN_LOOP_PORTADA
+    CMP AL, 0Ah             ; Nueva línea
+    JE COLUMN_LOOP_PORTADA
+
+DRAW_COLOR_PORTADA:
+    
+    ; Convertir el carácter a su valor hexadecimal
+    CALL ASCII_TO_COLOR
+
+    ; Dibujar el píxel con el color correspondiente
+    MOV AH, 0Ch             ; Función para dibujar píxel
+    MOV BH, 0               ; Página 0
+    MOV CX, CX
+    MOV DX, DX
+    INT 10h                 ; Dibujar el píxel
+
+NEXT_COLUMN_PORTADA:
+    INC CX                  ; Avanzar a la siguiente columna
+    CMP CX, 452
+    JL COLUMN_LOOP_PORTADA
+
+NEXT_ROW_PORTADA:
+    MOV CX, 36         ; Reiniciar columna
+    INC DX                  ; Avanzar a la siguiente fila
+    CMP DX, 306
+    JL COLUMN_LOOP_PORTADA
+
+DONE_LOADING_PORTADA:
+    ; Cerrar el archivo
+    MOV AH, 3Eh             ; Cerrar archivo
+    MOV BX, BX              ; Handle del archivo
+    INT 21h
+    RET
+
+DRAW_PORTADA ENDP
+
+FILL_DRAWING_AREA PROC
+    MOV WORD PTR [X1], 35   ; Columna inicial (X1) para el tercer botón
+    MOV WORD PTR [Y1], 75 ; Fila inicial (Y1)
+    MOV WORD PTR [X2], 450  ; Columna final (X2)
+    MOV WORD PTR [Y2], 305  ; Fila final (Y2)
+    MOV AL, [SELECTED_COLOR]
+    CALL FILL_RECTANGLE
+    MOV WORD PTR [DRAW_X], 242
+    MOV WORD PTR [DRAW_Y], 190
+    RET
+FILL_DRAWING_AREA ENDP
+
 ;---------------------------------------------------------
 ; PROGRAMA PRINCIPAL
 ; ----------------------------------------------------------------
@@ -3264,7 +3274,13 @@ MAIN_LOOP:
     CHECK_RECT_24:
     SET_LINE_POINTS 330, 325, 360, 355
     CALL IS_CLICK_INSIDE_RECTANGLE
-    JE PRINT_ESTRELLA
+    JNE CHECK_RECT_25
+    JMP PRINT_ESTRELLA
+
+    CHECK_RECT_25:
+    SET_LINE_POINTS 429, 434, 460, 465
+    CALL IS_CLICK_INSIDE_RECTANGLE
+    JE FILL_AREA
      
     CALL DRAWING_LOOP
 
@@ -3273,6 +3289,10 @@ DRAW_PROCESS:
     MOV [SELECTED_COLOR], AL
     CALL DRAWING_LOOP
     JMP MAIN_LOOP           ; Continuar verificando clics
+
+FILL_AREA:
+    CALL FILL_DRAWING_AREA
+    JMP MAIN_LOOP
 
 PRINT_ESTRELLA:
     CALL DRAW_EST
