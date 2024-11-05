@@ -18,7 +18,7 @@
     txtDibujo DB 'Dibujo sin nombre$'
     txtColores DB 'Colores$'
     txtSketch DB 'Etch A Sketch$'
-    txtGruesor DB 'Gruesor$'
+    txtGrosor DB 'Grosor$'
     txtAsterisco DB '*$'
     txtError DB 'Bosquejo no existe$'
     txtGuardado DB 'Bosquejo guardado$'
@@ -364,7 +364,7 @@ TEXT_SKETCH ENDP
 TEXT_GRUESOR PROC
     ; Escribe en pantalla texto del botón de guardar
     CLD
-    MOV SI, OFFSET txtGruesor
+    MOV SI, OFFSET txtGrosor
     TEXT_POSITION 25,65
 PRINT_TXT_GRUESOR:
     LODSB              ; Cargar el siguiente byte del mensaje en AL
